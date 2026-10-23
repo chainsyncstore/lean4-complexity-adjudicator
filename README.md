@@ -1,4 +1,4 @@
-# P vs. NP — Formal Reductions, Barriers & Candidate-Lemma Refutations in Lean 4 (Mathlib & Core) & LaTeX
+# Formalized reduction chains and explicit Lean 4 counterexamples (LP integrality gaps, Karatsuba cancellation) to common shortcut lemmas.
 
 [![Lean 4.15.0](https://img.shields.io/badge/Lean-v4.15.0-blue)](./lean/PvsNPMathlib.lean) [![Mathlib v4.15.0](https://img.shields.io/badge/Mathlib-v4.15.0-purple)](./lean/PvsNPMathlib.lean) [![Zero Sorrys](https://img.shields.io/badge/sorry-0-brightgreen)](./lean/PvsNPMathlib.lean) [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](./LICENSE)
 
