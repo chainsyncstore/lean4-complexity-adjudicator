@@ -1,0 +1,18 @@
+name = "p-vs-np-lean4-adjudicator"
+version = "0.2.0"
+defaultTargets = ["PvsNPMathlib", "PvsNPAdjudication"]
+
+[[require]]
+name = "mathlib"
+git = "https://github.com/leanprover-community/mathlib4.git"
+rev = "v4.15.0"
+
+[[lean_lib]]
+name = "PvsNPMathlib"
+srcDir = "lean"
+roots = ["PvsNPMathlib"]
+
+[[lean_lib]]
+name = "PvsNPAdjudication"
+srcDir = "lean"
+roots = ["PvsNPAdjudication"]
