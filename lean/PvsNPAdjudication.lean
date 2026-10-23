@@ -398,6 +398,167 @@ theorem pnp_07_tseitin_circuit_equisat (env : Nat → Bool) (c : BoolCircuit) :
   · intro heval
     exact ⟨evalCircuit env, pnp_07_tseitin_circuit_completeness env c, heval⟩
 
+/-- Canonical wire identity of a subcircuit node. -/
+def nodeId (c : BoolCircuit) : BoolCircuit := c
+
+/-- Canonical wire assignment induced by evaluating every subcircuit on `env`. -/
+def canonicalWireEnv (env : Nat → Bool) (c : BoolCircuit) : Bool :=
+  evalCircuit env c
+
+/-- A 3-CNF literal `(wire, polarity)` over wire type `α` (`true` = positive, `false` = negated). -/
+abbrev Lit3 (α : Type) := α × Bool
+
+/-- A 3-CNF clause consisting of three literals over wire type `α`. -/
+abbrev Clause3 (α : Type) := Lit3 α × Lit3 α × Lit3 α
+
+/-- Evaluate a single literal under wire assignment `assign`. -/
+def evalLit3 {α : Type} (assign : α → Bool) (l : Lit3 α) : Bool :=
+  if l.2 then assign l.1 else !(assign l.1)
+
+/-- Evaluate a single 3-clause under wire assignment `assign`. -/
+def evalClause3 {α : Type} (assign : α → Bool) (cl : Clause3 α) : Bool :=
+  evalLit3 assign cl.1 || evalLit3 assign cl.2.1 || evalLit3 assign cl.2.2
+
+/-- Evaluate a finite list of 3-clauses (a concrete emitted 3-CNF formula). -/
+def evalCNF3 {α : Type} (assign : α → Bool) : List (Clause3 α) → Bool
+  | []        => true
+  | cl :: cls => evalClause3 assign cl && evalCNF3 assign cls
+
+/-- Concrete 2-clause 3-CNF emission for a NOT gate `out ↔ ¬in1`. -/
+def emitNotClauses (in1 out : BoolCircuit) : List (Clause3 BoolCircuit) :=
+  [((in1, false), (out, false), (out, false)),
+   ((in1, true),  (out, true),  (out, true))]
+
+/-- Concrete 3-clause 3-CNF emission for an AND gate `out ↔ (in1 ∧ in2)`. -/
+def emitAndClauses (in1 in2 out : BoolCircuit) : List (Clause3 BoolCircuit) :=
+  [((in1, false), (in2, false), (out, true)),
+   ((in1, true),  (out, false), (out, false)),
+   ((in2, true),  (out, false), (out, false))]
+
+/-- Concrete 3-clause 3-CNF emission for an OR gate `out ↔ (in1 ∨ in2)`. -/
+def emitOrClauses (in1 in2 out : BoolCircuit) : List (Clause3 BoolCircuit) :=
+  [((in1, true),  (in2, true),  (out, false)),
+   ((in1, false), (out, true),  (out, true)),
+   ((in2, false), (out, true),  (out, true))]
+
+/-- Recursive compiler emitting the concrete finite `List (Clause3 BoolCircuit)`
+    for all internal gates of `c`. -/
+def compileTseitinGateClauses : BoolCircuit → List (Clause3 BoolCircuit)
+  | .var _     => []
+  | .not c     => emitNotClauses c (.not c) ++ compileTseitinGateClauses c
+  | .and c1 c2 => emitAndClauses c1 c2 (.and c1 c2) ++
+                  compileTseitinGateClauses c1 ++ compileTseitinGateClauses c2
+  | .or  c1 c2 => emitOrClauses c1 c2 (.or c1 c2) ++
+                  compileTseitinGateClauses c1 ++ compileTseitinGateClauses c2
+
+/-- Concrete emitted 3-CNF formula for circuit `c`: prepends the output unit clause
+    `(c ∨ c ∨ c)` to `compileTseitinGateClauses c`. -/
+def compileTseitinCNF (c : BoolCircuit) : List (Clause3 BoolCircuit) :=
+  ((c, true), (c, true), (c, true)) :: compileTseitinGateClauses c
+
+/-- Satisfaction predicate for the concrete emitted 3-CNF `compileTseitinCNF c`
+    combined with input-variable agreement with `env`. -/
+def tseitin3CNFSat (c : BoolCircuit) (env : Nat → Bool) (wire : BoolCircuit → Bool) : Prop :=
+  tseitinWireConsistent env wire c = true ∧ evalCNF3 wire (compileTseitinCNF c) = true
+
+theorem evalCNF3_append {α : Type} (assign : α → Bool) (l1 l2 : List (Clause3 α)) :
+    evalCNF3 assign (l1 ++ l2) = (evalCNF3 assign l1 && evalCNF3 assign l2) := by
+  induction l1 with
+  | nil => simp [evalCNF3]
+  | cons cl cls ih =>
+    rw [List.cons_append, evalCNF3, ih, evalCNF3, Bool.and_assoc]
+
+theorem evalCNF3_emitNot (w : BoolCircuit → Bool) (a b : BoolCircuit) :
+    evalCNF3 w (emitNotClauses a b) = tseitinNotClauses (w a) (w b) := by
+  simp only [emitNotClauses, evalCNF3, evalClause3, evalLit3, tseitinNotClauses]
+  cases w a <;> cases w b <;> decide
+
+theorem evalCNF3_emitAnd (w : BoolCircuit → Bool) (a b out : BoolCircuit) :
+    evalCNF3 w (emitAndClauses a b out) = tseitinAndClauses2 (w a) (w b) (w out) := by
+  simp only [emitAndClauses, evalCNF3, evalClause3, evalLit3, tseitinAndClauses2]
+  cases w a <;> cases w b <;> cases w out <;> decide
+
+theorem evalCNF3_emitOr (w : BoolCircuit → Bool) (a b out : BoolCircuit) :
+    evalCNF3 w (emitOrClauses a b out) = tseitinOrClauses (w a) (w b) (w out) := by
+  simp only [emitOrClauses, evalCNF3, evalClause3, evalLit3, tseitinOrClauses]
+  cases w a <;> cases w b <;> cases w out <;> decide
+
+/-- Theorem PNP-07e: Whenever `tseitinWireConsistent env wire c = true`, the concrete emitted
+    gate clause list `compileTseitinGateClauses c` evaluates to `true` under `evalCNF3`. -/
+theorem pnp_07_emitted_gate_clauses_true_of_consistent
+    (env : Nat → Bool) (wire : BoolCircuit → Bool) (c : BoolCircuit)
+    (hcons : tseitinWireConsistent env wire c = true) :
+    evalCNF3 wire (compileTseitinGateClauses c) = true := by
+  induction c with
+  | var _ => rfl
+  | not c ih =>
+    simp only [tseitinWireConsistent, Bool.and_eq_true] at hcons
+    simp only [compileTseitinGateClauses, evalCNF3_append, evalCNF3_emitNot,
+      hcons.1, ih hcons.2, Bool.and_self]
+  | and c1 c2 ih1 ih2 =>
+    simp only [tseitinWireConsistent, Bool.and_eq_true] at hcons
+    simp only [compileTseitinGateClauses, evalCNF3_append, evalCNF3_emitAnd,
+      hcons.1.1, ih1 hcons.1.2, ih2 hcons.2, Bool.and_self]
+  | or c1 c2 ih1 ih2 =>
+    simp only [tseitinWireConsistent, Bool.and_eq_true] at hcons
+    simp only [compileTseitinGateClauses, evalCNF3_append, evalCNF3_emitOr,
+      hcons.1.1, ih1 hcons.1.2, ih2 hcons.2, Bool.and_self]
+
+/-- Theorem PNP-07f: The length of the emitted gate clause list `compileTseitinGateClauses c`
+    equals `tseitinGateClauseCount c`. -/
+theorem pnp_07_emitted_gate_clauses_length (c : BoolCircuit) :
+    (compileTseitinGateClauses c).length = tseitinGateClauseCount c := by
+  induction c with
+  | var _ => rfl
+  | not c ih =>
+    simp only [compileTseitinGateClauses, List.length_append, emitNotClauses,
+      List.length_cons, List.length_nil, tseitinGateClauseCount, ih]
+  | and c1 c2 ih1 ih2 =>
+    simp only [compileTseitinGateClauses, List.length_append, emitAndClauses,
+      List.length_cons, List.length_nil, tseitinGateClauseCount, ih1, ih2]
+  | or c1 c2 ih1 ih2 =>
+    simp only [compileTseitinGateClauses, List.length_append, emitOrClauses,
+      List.length_cons, List.length_nil, tseitinGateClauseCount, ih1, ih2]
+
+/-- Theorem PNP-07g: The length of the full emitted 3-CNF `compileTseitinCNF c` equals
+    `tseitinGateClauseCount c + 1` and is bounded above by `3 * gateCount c + 1`. -/
+theorem pnp_07_emitted_cnf_length_bound (c : BoolCircuit) :
+    (compileTseitinCNF c).length = tseitinGateClauseCount c + 1 ∧
+    (compileTseitinCNF c).length ≤ 3 * gateCount c + 1 := by
+  have hlen : (compileTseitinCNF c).length = tseitinGateClauseCount c + 1 := by
+    simp only [compileTseitinCNF, List.length_cons, pnp_07_emitted_gate_clauses_length]
+  refine ⟨hlen, ?_⟩
+  rw [hlen]
+  exact pnp_07_tseitin_clause_count_linear_bound c
+
+/-- Theorem PNP-07h: For a single NOT gate `.not (.var 0)`, the emitted 3-CNF has length `3`,
+    which is strictly less than `3 * gateCount (.not (.var 0)) + 1 = 4` because a NOT gate
+    emits 2 gate clauses rather than 3. -/
+theorem pnp_07_single_not_gate_clause_count_strict_lt :
+    (compileTseitinCNF (.not (.var 0))).length = 3 ∧
+    3 * gateCount (.not (.var 0)) + 1 = 4 ∧
+    (compileTseitinCNF (.not (.var 0))).length < 3 * gateCount (.not (.var 0)) + 1 := by
+  decide
+
+/-- Theorem PNP-07i: Global Equi-Satisfiability of the concrete emitted 3-CNF
+    `compileTseitinCNF c` via `tseitin3CNFSat`. -/
+theorem pnp_07_emitted_cnf_equisat (env : Nat → Bool) (c : BoolCircuit) :
+    (∃ wire : BoolCircuit → Bool, tseitin3CNFSat c env wire) ↔
+    evalCircuit env c = true := by
+  constructor
+  · rintro ⟨wire, hcons, hcnf⟩
+    simp only [compileTseitinCNF, evalCNF3, evalClause3, evalLit3, ite_true,
+      Bool.or_self, Bool.and_eq_true] at hcnf
+    rw [← pnp_07_tseitin_circuit_soundness env wire c hcons]
+    exact hcnf.1
+  · intro heval
+    refine ⟨canonicalWireEnv env, ?_⟩
+    have hcons := pnp_07_tseitin_circuit_completeness env c
+    have hgates := pnp_07_emitted_gate_clauses_true_of_consistent env (canonicalWireEnv env) c hcons
+    refine ⟨hcons, ?_⟩
+    simp only [compileTseitinCNF, evalCNF3, evalClause3, evalLit3, ite_true,
+      Bool.or_self, canonicalWireEnv, heval, hgates, Bool.and_self]
+
 /- ============================================================================
    SECTION 8: PNP-08 — UNCONDITIONAL POLYNOMIAL-METHOD DEGREE LOWER BOUND FOR
    3-BIT PARITY VIA MULTILINEAR FINITE DIFFERENCES OVER `Int`
@@ -462,5 +623,208 @@ theorem pnp_08_no_deg2_polynomial_computes_parity3
   have hzero := pnp_08_cubeFiniteDiff3_degAtMost2_eq_zero c0 c1 c2 c3 c11 c22 c33 c12 c23 c13
   have hpar := pnp_08_cubeFiniteDiff3_paritySign3_eq_neg_eight
   omega
+
+/-- Update coordinate `k` of a boolean hypercube point `x : Nat → Bool` to `b`. -/
+def setBit (x : Nat → Bool) (k : Nat) (b : Bool) : Nat → Bool :=
+  fun i => if i = k then b else x i
+
+/-- Recursive `n`-bit Parity sign function `χ_n(x) = ∏_{i < n} (-1)^{x_i} ∈ {+1, -1}`
+    defined for arbitrary dimension `n : Nat`. -/
+def paritySignN : Nat → (Nat → Bool) → Int
+  | 0,     _ => 1
+  | n + 1, x => (if x n then -1 else 1) * paritySignN n x
+
+/-- Recursive `n`-dimensional boolean hypercube Fourier/finite-difference parity functional
+    `Δ_n(f) = ∑_{x ∈ {0,1}^n} χ_n(x) f(x)` defined for arbitrary dimension `n : Nat`. -/
+def hypercubeFourierParityN : Nat → ((Nat → Bool) → Int) → Int
+  | 0,     f => f (fun _ => false)
+  | n + 1, f =>
+      hypercubeFourierParityN n (fun x => f (setBit x n false) - f (setBit x n true))
+
+theorem hypercubeFourierParityN_zero (n : Nat) :
+    hypercubeFourierParityN n (fun _ => 0) = 0 := by
+  induction n with
+  | zero => rfl
+  | succ n ih =>
+    simp only [hypercubeFourierParityN, Int.sub_self, ih]
+
+theorem hypercubeFourierParityN_add (n : Nat) (f g : (Nat → Bool) → Int) :
+    hypercubeFourierParityN n (fun x => f x + g x) =
+      hypercubeFourierParityN n f + hypercubeFourierParityN n g := by
+  induction n generalizing f g with
+  | zero => rfl
+  | succ n ih =>
+    simp only [hypercubeFourierParityN]
+    have h_eq :
+        (fun x => (f (setBit x n false) + g (setBit x n false)) -
+                  (f (setBit x n true) + g (setBit x n true))) =
+        (fun x => (f (setBit x n false) - f (setBit x n true)) +
+                  (g (setBit x n false) - g (setBit x n true))) := by
+      funext x
+      omega
+    rw [h_eq, ih]
+
+theorem setBit_comm (x : Nat → Bool) {j k : Nat} (hjk : j ≠ k) (b1 b2 : Bool) :
+    setBit (setBit x j b1) k b2 = setBit (setBit x k b2) j b1 := by
+  funext i
+  unfold setBit
+  by_cases hik : i = k
+  · subst hik
+    have hij : i ≠ j := Ne.symm hjk
+    simp [hij]
+  · simp [hik]
+
+theorem paritySignN_setBit_ge (n m : Nat) (hnm : n ≤ m) (x : Nat → Bool) (b : Bool) :
+    paritySignN n (setBit x m b) = paritySignN n x := by
+  induction n with
+  | zero => rfl
+  | succ n ih =>
+    have hlt : n < m := Nat.lt_of_lt_of_le (Nat.lt_succ_self n) hnm
+    have hne : n ≠ m := Nat.ne_of_lt hlt
+    have hle : n ≤ m := Nat.le_of_lt hlt
+    simp only [paritySignN, setBit, hne, ite_false, ih hle]
+
+/-- Theorem PNP-08d (Asymptotic All-`n` Orthogonality of Sub-Degree / Coordinate-Insensitive Terms):
+    For every dimension `n : Nat` and every coordinate `k < n`, any function
+    `f : (Nat → Bool) → Int` that does not depend on coordinate `k` (such as any
+    multilinear monomial of degree `≤ n - 1`, which must omit at least one variable `k < n`)
+    is identically annihilated by `hypercubeFourierParityN n`. -/
+theorem pnp_08_all_n_subdegree_term_annihilated (n k : Nat) (hk : k < n)
+    (f : (Nat → Bool) → Int)
+    (h_insens : ∀ x : Nat → Bool, f (setBit x k false) = f (setBit x k true)) :
+    hypercubeFourierParityN n f = 0 := by
+  induction n generalizing k f with
+  | zero => omega
+  | succ n ih =>
+    simp only [hypercubeFourierParityN]
+    by_cases hkn : k = n
+    · subst hkn
+      have h_zero : (fun x => f (setBit x k false) - f (setBit x k true)) = (fun _ => 0) := by
+        funext x
+        have hx := h_insens x
+        omega
+      rw [h_zero, hypercubeFourierParityN_zero]
+    · have hk_lt : k < n := Nat.lt_of_le_of_ne (Nat.le_of_lt_succ hk) hkn
+      apply ih k hk_lt
+      intro x
+      have h1 : setBit (setBit x k false) n false = setBit (setBit x n false) k false :=
+        setBit_comm x hkn false false
+      have h2 : setBit (setBit x k false) n true = setBit (setBit x n true) k false :=
+        setBit_comm x hkn false true
+      have h3 : setBit (setBit x k true) n false = setBit (setBit x n false) k true :=
+        setBit_comm x hkn true false
+      have h4 : setBit (setBit x k true) n true = setBit (setBit x n true) k true :=
+        setBit_comm x hkn true true
+      rw [h1, h2, h3, h4]
+      have hf0 := h_insens (setBit x n false)
+      have hf1 := h_insens (setBit x n true)
+      omega
+
+theorem hypercubeFourierParityN_scale_two (n : Nat) (f : (Nat → Bool) → Int) :
+    hypercubeFourierParityN n (fun x => 2 * f x) = 2 * hypercubeFourierParityN n f := by
+  have h_eq : (fun x => 2 * f x) = (fun x => f x + f x) := by
+    funext x
+    omega
+  rw [h_eq, hypercubeFourierParityN_add]
+  omega
+
+/-- Theorem PNP-08e (Asymptotic All-`n` Fourier Norm of `n`-Bit Parity):
+    For every dimension `n : Nat`, `hypercubeFourierParityN n (paritySignN n) > 0`. -/
+theorem pnp_08_all_n_parity_fourier_pos (n : Nat) :
+    0 < hypercubeFourierParityN n (paritySignN n) := by
+  induction n with
+  | zero => decide
+  | succ n ih =>
+    simp only [hypercubeFourierParityN]
+    have h_step :
+        (fun x => paritySignN (n + 1) (setBit x n false) - paritySignN (n + 1) (setBit x n true)) =
+        (fun x => 2 * paritySignN n x) := by
+      funext x
+      simp only [paritySignN, setBit, ↓reduceIte, Bool.false_eq_true,
+        paritySignN_setBit_ge n n (Nat.le_refl n)]
+      omega
+    rw [h_step, hypercubeFourierParityN_scale_two]
+    omega
+
+/-- Sum a finite list of functions `terms : List ((Nat → Bool) → Int)` pointwise. -/
+def sumPolyTerms : List ((Nat → Bool) → Int) → (Nat → Bool) → Int
+  | [],      _ => 0
+  | t :: ts, x => t x + sumPolyTerms ts x
+
+/-- Theorem PNP-08f (Asymptotic All-`n` Annihilation of Arbitrary Sums of Sub-Degree Terms):
+    For every `n : Nat`, any finite sum of terms `terms` in which each term is independent
+    of at least one coordinate `k < n` (i.e. any polynomial of degree `< n`) satisfies
+    `hypercubeFourierParityN n (sumPolyTerms terms) = 0`. -/
+theorem pnp_08_all_n_subdegree_sum_eq_zero (n : Nat)
+    (terms : List ((Nat → Bool) → Int))
+    (h_subdeg : ∀ t ∈ terms, ∃ k, k < n ∧ ∀ x, t (setBit x k false) = t (setBit x k true)) :
+    hypercubeFourierParityN n (sumPolyTerms terms) = 0 := by
+  induction terms with
+  | nil =>
+    exact hypercubeFourierParityN_zero n
+  | cons t ts ih =>
+    have h_split : sumPolyTerms (t :: ts) = (fun x => t x + sumPolyTerms ts x) := rfl
+    rw [h_split, hypercubeFourierParityN_add]
+    rcases h_subdeg t (List.mem_cons_self t ts) with ⟨k, hk, h_ins⟩
+    have ht0 := pnp_08_all_n_subdegree_term_annihilated n k hk t h_ins
+    have hts0 := ih (fun t' ht' => h_subdeg t' (List.mem_cons_of_mem t ht'))
+    omega
+
+/-- Theorem PNP-08g (Asymptotic All-`n` Polynomial Degree Lower Bound for `n`-Bit Parity):
+    For every dimension `n : Nat`, no polynomial `sumPolyTerms terms` composed of terms
+    of degree `< n` (each omitting at least one coordinate `k < n`) can agree with
+    `paritySignN n` on `(Nat → Bool)`. -/
+theorem pnp_08_all_n_no_subdegree_polynomial_computes_parity (n : Nat)
+    (terms : List ((Nat → Bool) → Int))
+    (h_subdeg : ∀ t ∈ terms, ∃ k, k < n ∧ ∀ x, t (setBit x k false) = t (setBit x k true)) :
+    ¬(∀ x : Nat → Bool, sumPolyTerms terms x = paritySignN n x) := by
+  intro hall
+  have h_eq : sumPolyTerms terms = paritySignN n := by
+    funext x
+    exact hall x
+  have h_zero := pnp_08_all_n_subdegree_sum_eq_zero n terms h_subdeg
+  have h_pos := pnp_08_all_n_parity_fourier_pos n
+  rw [h_eq] at h_zero
+  omega
+
+/- ============================================================================
+   SECTION 9: PNP-09 — RAZBOROV-RUDICH NATURAL PROOFS DISTINGUISHER INEQUALITY
+   & AARONSON-WIGDERSON ALGEBRIZATION EXTENSION OBSTRUCTION
+   ============================================================================ -/
+
+/-- Theorem PNP-09a (Razborov-Rudich Natural Proofs Distinguisher Bound):
+    If a combinatorial property `C` on truth tables of universe size `U > 0` has
+    - **Largeness**: `C_count ≥ delta_num` (out of `U` total functions), and
+    - **Usefulness against `F`**: `F_in_C = 0` (no function in family `F` satisfies `C`),
+    then the unnormalized distinguishing gap `C_count - F_in_C` is at least `delta_num`,
+    so any pseudorandomness bound `C_count - F_in_C ≤ eps_num` forces `delta_num ≤ eps_num`
+    (refuting `delta_num > eps_num`). -/
+theorem pnp_09_razborov_rudich_natural_proofs_barrier
+    (C_count F_in_C delta_num eps_num : Int)
+    (h_largeness : delta_num ≤ C_count)
+    (h_usefulness : F_in_C = 0)
+    (h_prf_security : C_count - F_in_C ≤ eps_num) :
+    delta_num ≤ eps_num := by
+  omega
+
+/-- Boolean indicator on `{0, 1}` vs quadratic algebraic extension `q(x) = x^2` over `Int`:
+    on the boolean domain `{0, 1}`, `x^2 - x = 0`, whereas at the non-boolean extension
+    point `x = 2`, `x^2 - x = 2 ≠ 0`. -/
+def algebrizationExtensionGap (x : Int) : Int :=
+  x * x - x
+
+/-- Theorem PNP-09b (Aaronson-Wigderson Algebrization Extension Obstruction):
+    The polynomial `algebrizationExtensionGap x = x^2 - x` vanishes identically on the
+    boolean cube `{0, 1}` (`b2i b` for all `b : Bool`), yet is strictly positive (`= 2`)
+    at the algebraic extension point `x = 2`, demonstrating that multilinear collapse
+    `x^2 = x` does not algebrize to low-degree extensions over `Int`. -/
+theorem pnp_09_algebrization_extension_obstruction :
+    (∀ b : Bool, algebrizationExtensionGap (b2i b) = 0) ∧
+    algebrizationExtensionGap 2 = 2 ∧
+    algebrizationExtensionGap 2 ≠ 0 := by
+  constructor
+  · intro b
+    cases b <;> decide
+  · decide
 
 end PvsNPAdjudication

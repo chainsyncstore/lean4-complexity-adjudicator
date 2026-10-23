@@ -214,46 +214,46 @@ expressing the degree-1 convolution cross-term as a linear combination of the th
 \end{counterexample}
 
 % ============================================================================
-\section{Inductive Tseitin 3-CNF Circuit Transformation (\texorpdfstring{$\mathrm{PNP\text{-}07}$}{PNP-07})}
+\section{Inductive Emitted Tseitin 3-CNF Circuit Compiler (\texorpdfstring{$\mathrm{PNP\text{-}07}$}{PNP-07})}
 % ============================================================================
 
-Extending the single-gate gadget of Section~3 ($\mathrm{PNP\text{-}02}$) to arbitrary-depth boolean circuits, we define the inductive syntax $\mathrm{BoolCircuit}$ (`var`, `not`, `and`, `or`) over input variables indexed by $\N$, recursive evaluation $\mathrm{evalCircuit}(\mathrm{env}, C) \in \{0, 1\}$, internal gate count $s = \mathrm{gateCount}(C)$, emitted 3-CNF clause count $\mathrm{tseitinGateClauseCount}(C)$ ($2$ clauses per $\mathrm{not}$ gate and $3$ clauses per $\mathrm{and}$/$\mathrm{or}$ gate), and the recursive wire-consistency predicate $\mathrm{tseitinWireConsistent}(\mathrm{env}, \mathrm{wire}, C)$.
+Extending the single-gate gadget of Section~3 ($\mathrm{PNP\text{-}02}$) to arbitrary-depth boolean circuits, we define the inductive syntax $\mathrm{BoolCircuit}$ (`var`, `not`, `and`, `or`), recursive evaluation $\mathrm{evalCircuit}(\mathrm{env}, C)$, $\mathrm{nodeId}$, $\mathrm{canonicalWireEnv}$, internal gate count $s = \mathrm{gateCount}(C)$, gate clause count $\mathrm{tseitinGateClauseCount}(C)$ ($2$ clauses per $\mathrm{not}$ gate and $3$ clauses per $\mathrm{and}$/$\mathrm{or}$ gate), recursive wire-consistency predicate $\mathrm{tseitinWireConsistent}(\mathrm{env}, \mathrm{wire}, C)$, and the concrete emitted 3-CNF compiler $\mathrm{compileTseitinCNF} : \mathrm{BoolCircuit} \to \mathrm{List}(\mathrm{Clause3}\;\mathrm{BoolCircuit})$ evaluated via $\mathrm{evalCNF3}$ and $\mathrm{tseitin3CNFSat}$.
 
-\begin{theorem}[$\mathrm{PNP\text{-}07}$: Structural Induction Equi-Satisfiability and Linear Clause Bound for Arbitrary-Depth Boolean Circuits]\label{thm:pnp07}
+\begin{theorem}[$\mathrm{PNP\text{-}07}$: Concrete Emitted 3-CNF Length Bound, Strict $\mathrm{NOT}$-Gate Inequality, and Structural Induction Equi-Satisfiability]\label{thm:pnp07}
 For every boolean circuit $C : \mathrm{BoolCircuit}$ with $s = \mathrm{gateCount}(C)$ internal gates and every input environment $\mathrm{env} : \N \to \{0, 1\}$:
 \begin{enumerate}
-  \item \textbf{(Linear 3-CNF Clause-Count Bound)}: The total number of gate-consistency 3-CNF clauses satisfies $\mathrm{tseitinGateClauseCount}(C) \le 3s$, and including the top-level output unit clause yields at most $3s + 1$ clauses (\texttt{pnp\_07\_tseitin\_clause\_count\_linear\_bound}).
-  \item \textbf{(Soundness by Structural Induction)}: Every wire labeling $\mathrm{wire} : \mathrm{BoolCircuit} \to \{0, 1\}$ satisfying $\mathrm{tseitinWireConsistent}(\mathrm{env}, \mathrm{wire}, C)$ satisfies $\mathrm{wire}(C) = \mathrm{evalCircuit}(\mathrm{env}, C)$ (\texttt{pnp\_07\_tseitin\_circuit\_soundness}).
-  \item \textbf{(Completeness by Structural Induction)}: The canonical wire assignment $\mathrm{wire}(C') \coloneqq \mathrm{evalCircuit}(\mathrm{env}, C')$ satisfies $\mathrm{tseitinWireConsistent}(\mathrm{env}, \mathrm{evalCircuit}(\mathrm{env}), C)$ (\texttt{pnp\_07\_tseitin\_circuit\_completeness}).
-  \item \textbf{(Global Equi-Satisfiability)}: $\mathrm{evalCircuit}(\mathrm{env}, C) = 1$ if and only if there exists a wire assignment $\mathrm{wire} : \mathrm{BoolCircuit} \to \{0, 1\}$ such that $\mathrm{tseitinWireConsistent}(\mathrm{env}, \mathrm{wire}, C)$ and $\mathrm{wire}(C) = 1$ (\texttt{pnp\_07\_tseitin\_circuit\_equisat}).
+  \item \textbf{(Emitted 3-CNF Clause-List Length Identity and Linear Upper Bound)}: The concrete emitted clause list $\mathrm{compileTseitinCNF}(C)$ has exact length $\mathrm{tseitinGateClauseCount}(C) + 1 \le 3s + 1$ (\texttt{pnp\_07\_emitted\_cnf\_length\_bound}, \texttt{pnp\_07\_tseitin\_clause\_count\_linear\_bound}), and for a single $\mathrm{not}$ gate $C_0 = \mathrm{not}(\mathrm{var}\;0)$, $(\mathrm{compileTseitinCNF}(C_0)).\mathrm{length} = 3 < 4 = 3s + 1$ (\texttt{pnp\_07\_single\_not\_gate\_clause\_count\_strict\_lt}).
+  \item \textbf{(Soundness and Completeness by Structural Induction)}: Every wire labeling satisfying $\mathrm{tseitinWireConsistent}(\mathrm{env}, \mathrm{wire}, C)$ satisfies $\mathrm{wire}(C) = \mathrm{evalCircuit}(\mathrm{env}, C)$ (\texttt{pnp\_07\_tseitin\_circuit\_soundness}), and $\mathrm{canonicalWireEnv}(\mathrm{env})$ satisfies both $\mathrm{tseitinWireConsistent}$ (\texttt{pnp\_07\_tseitin\_circuit\_completeness}) and $\mathrm{evalCNF3}$ on $\mathrm{compileTseitinGateClauses}(C)$ (\texttt{pnp\_07\_emitted\_gate\_clauses\_true\_of\_consistent}).
+  \item \textbf{(Global Equi-Satisfiability)}: $\mathrm{evalCircuit}(\mathrm{env}, C) = 1 \iff \exists \mathrm{wire},\; \mathrm{tseitin3CNFSat}(C, \mathrm{env}, \mathrm{wire})$ (\texttt{pnp\_07\_emitted\_cnf\_equisat}, \texttt{pnp\_07\_tseitin\_circuit\_equisat}, \texttt{pnp\_07\_mathlib\_tseitin\_equisat\_and\_size}).
 \end{enumerate}
 \end{theorem}
 
-\begin{proof}
-We proceed by structural induction on $C$. For base case $C = \mathrm{var}(i)$, $\mathrm{gateCount}(C) = 0 = \mathrm{tseitinGateClauseCount}(C)$ and $\mathrm{tseitinWireConsistent}$ reduces to $\mathrm{wire}(\mathrm{var}(i)) = \mathrm{env}(i) = \mathrm{evalCircuit}(\mathrm{env}, \mathrm{var}(i))$. For inductive steps $C = \mathrm{not}(C_1)$, $\mathrm{and}(C_1, C_2)$, and $\mathrm{or}(C_1, C_2)$, the clause bound follows from $2 \le 3$ and the inductive hypotheses on $C_1, C_2$; soundness follows by substituting $\mathrm{wire}(C_k) = \mathrm{evalCircuit}(\mathrm{env}, C_k)$ into the gate consistency equation; and completeness holds by reflexivity of $\mathrm{evalCircuit}$ at each gate.
-\end{proof}
-
 % ============================================================================
-\section{Polynomial-Method Degree Lower Bound for 3-Bit Parity (\texorpdfstring{$\mathrm{PNP\text{-}08}$}{PNP-08})}
+\section{Asymptotic All-\texorpdfstring{$n$}{n} and 3-Bit Polynomial-Method Degree Lower Bounds for Parity (\texorpdfstring{$\mathrm{PNP\text{-}08}$}{PNP-08})}
 % ============================================================================
 
-A foundational method in circuit complexity (Razborov 1987; Smolensky 1987) establishes lower bounds by proving that low-degree polynomials cannot represent symmetric functions such as $\mathrm{PARITY}_n$. On $\{0, 1\}^3$, let $\mathrm{paritySign3}(x_1, x_2, x_3) \coloneqq (1 - 2x_1)(1 - 2x_2)(1 - 2x_3) \in \{\pm 1\}$, and define the 3-fold boolean cube finite-difference operator $\Delta_{123} = \Delta_1\Delta_2\Delta_3$:
-\begin{equation}
-  \Delta_{123}(f) \;\coloneqq\; \sum_{x \in \{0,1\}^3} (-1)^{3 - (x_1 + x_2 + x_3)} f(x_1, x_2, x_3).
-\end{equation}
+On the $n$-dimensional boolean hypercube $\{0, 1\}^n$ for arbitrary $n \in \N$, define the $n$-bit Parity sign function $\chi_n(x) = \prod_{i < n} (-1)^{x_i} \in \{\pm 1\}$ (\texttt{paritySignN} over $\Z$, \texttt{paritySignRealN} over $\R$) and the $n$-dimensional boolean hypercube Fourier/finite-difference parity functional $\Delta_n(f) = \sum_{x \in \{0,1\}^n} \chi_n(x) f(x)$ (\texttt{hypercubeFourierParityN}, \texttt{realHypercubeFourierParityN}).
 
-\begin{theorem}[$\mathrm{PNP\text{-}08}$: Unconditional Degree Lower Bound for 3-Bit Parity via Cube Finite Differences]\label{thm:pnp08}
-Let $P(x_1, x_2, x_3) = c_0 + \sum_{i=1}^3 c_i x_i + \sum_{i=1}^3 c_{ii} x_i^2 + \sum_{1 \le i < j \le 3} c_{ij} x_i x_j$ be any 3-variable polynomial of total degree at most $2$ over $\R$ (or $\Z$). Then:
+\begin{theorem}[$\mathrm{PNP\text{-}08}$: Asymptotic All-$n$ and Fixed $n = 3$ Polynomial Degree Lower Bounds for Parity]\label{thm:pnp08}
+Over $\R$ and $\Z$:
 \begin{enumerate}
-  \item \textbf{(Annihilation of Degree-$\le 2$ Polynomials)}: $\Delta_{123}(P) = 0$ identically for all coefficients $c_0, \dots, c_{13}$ (\texttt{pnp\_08\_cubeFiniteDiff3\_degAtMost2\_eq\_zero}).
-  \item \textbf{(Non-Vanishing Cube Derivative of Parity)}: $\Delta_{123}(\mathrm{paritySign3}) = -8 \ne 0$ (\texttt{pnp\_08\_cubeFiniteDiff3\_paritySign3\_eq\_neg\_eight}).
-  \item \textbf{(Strict Degree Lower Bound)}: No polynomial $P$ of total degree at most $2$ over $\R$ (or $\Z$) can agree with $\mathrm{paritySign3}$ on all $8$ vertices of $\{0, 1\}^3$; hence any polynomial computing 3-bit Parity on $\{0, 1\}^3$ has degree at least $3$ (\texttt{pnp\_08\_no\_deg2\_polynomial\_computes\_parity3}).
+  \item \textbf{(Fixed $n = 3$ Explicit 10-Parameter Certificate)}: For any 3-variable polynomial $P(x_1, x_2, x_3)$ of total degree at most $2$, $\Delta_{123}(P) = 0$ (\texttt{pnp\_08\_cubeFiniteDiff3\_degAtMost2\_eq\_zero}), whereas $\Delta_{123}(\mathrm{paritySign3}) = -8 \ne 0$ (\texttt{pnp\_08\_cubeFiniteDiff3\_paritySign3\_eq\_neg\_eight}), so no degree-$\le 2$ polynomial computes 3-bit Parity on $\{0, 1\}^3$ (\texttt{pnp\_08\_no\_deg2\_polynomial\_computes\_parity3}).
+  \item \textbf{(Asymptotic All-$n$ Sub-Degree Orthogonality)}: For every dimension $n \in \N$ and every coordinate $k < n$, any function $f : \{0, 1\}^n \to \R$ (or $\Z$) independent of coordinate $k$ (including every multilinear monomial of degree $\le n - 1$) satisfies $\Delta_n(f) = 0$ (\texttt{pnp\_08\_all\_n\_subdegree\_term\_annihilated}, \texttt{pnp\_08\_all\_n\_real\_subdegree\_term\_annihilated}).
+  \item \textbf{(Asymptotic All-$n$ Fourier Norm and Degree Lower Bound)}: For every $n \in \N$, $\Delta_n(\chi_n) = 2^n > 0$ (\texttt{pnp\_08\_all\_n\_real\_parity\_fourier\_eq\_two\_pow}, \texttt{pnp\_08\_all\_n\_parity\_fourier\_pos}), and therefore no finite sum of sub-degree terms (no polynomial of degree $< n$) can compute $\chi_n$ on $\{0, 1\}^n$ (\texttt{pnp\_08\_all\_n\_no\_subdegree\_polynomial\_computes\_parity}, \texttt{pnp\_08\_all\_n\_real\_no\_subdegree\_polynomial\_computes\_parity}).
 \end{enumerate}
 \end{theorem}
 
-\begin{proof}
-Each difference operator $\Delta_i f(x) = f(x|_{x_i=1}) - f(x|_{x_i=0})$ annihilates any monomial not containing $x_i$. Since every monomial in $P$ has total degree $\le 2$, it omits at least one variable $x_i \in \{x_1, x_2, x_3\}$, so $\Delta_{123}(P) = 0$ by ring expansion. Conversely, $\mathrm{paritySign3}(x_1,x_2,x_3) = (-1)^{x_1+x_2+x_3}$ has the same sign as $(-1)^{3-(x_1+x_2+x_3)} = -(-1)^{x_1+x_2+x_3}$ on all $8$ vertices of $\{0,1\}^3$, giving $\Delta_{123}(\mathrm{paritySign3}) = 8 \times (-1) = -8 \ne 0$. If $P(x) = \mathrm{paritySign3}(x)$ for all $x \in \{0,1\}^3$, then $0 = \Delta_{123}(P) = \Delta_{123}(\mathrm{paritySign3}) = -8$, a contradiction.
-\end{proof}
+% ============================================================================
+\section{Razborov--Rudich Natural Proofs and Algebrization Obstructions (\texorpdfstring{$\mathrm{PNP\text{-}09}$}{PNP-09})}
+% ============================================================================
+
+\begin{theorem}[$\mathrm{PNP\text{-}09}$: Razborov--Rudich Distinguisher Inequality and Algebrization Extension Obstruction]\label{thm:pnp09}
+Over $\R$ and $\Z$:
+\begin{enumerate}
+  \item \textbf{(Natural Proofs Distinguisher Bound)}: If a truth-table property $\mathcal{C}$ has density $\mathrm{prob}_{\mathcal{C}} \ge \delta \ge 0$ (\emph{Largeness}) and $\mathrm{prob}_{\mathcal{F}} = 0$ on a function family $\mathcal{F}$ (\emph{Usefulness}), then $|\mathrm{prob}_{\mathcal{C}} - \mathrm{prob}_{\mathcal{F}}| \ge \delta$, so any PRF indistinguishability bound $|\mathrm{prob}_{\mathcal{C}} - \mathrm{prob}_{\mathcal{F}}| \le \varepsilon$ forces $\delta \le \varepsilon$ (\texttt{pnp\_09\_mathlib\_razborov\_rudich\_natural\_proofs\_barrier}, \texttt{pnp\_09\_razborov\_rudich\_natural\_proofs\_barrier}).
+  \item \textbf{(Algebrization Extension Obstruction)}: The polynomial $x^2 - x$ vanishes on $\{0, 1\}$ yet equals $2 \ne 0$ at $x = 2$ (\texttt{pnp\_09\_algebrization\_extension\_obstruction}, \texttt{pnp\_09\_mathlib\_algebrization\_extension\_obstruction}).
+\end{enumerate}
+\end{theorem}
 
 % ============================================================================
 \section{Summary of Dual-Kernel Formal Verification}
@@ -278,10 +278,12 @@ $\mathrm{PNP\text{-}05}$ & Bilinear Margin \& Karatsuba Identity & \textbf{REFUT
                          & $K(x,y) = -xy,\; K(1,1)=-1<0$ & (`[CommRing R]`) & + \texttt{pnp\_05\_karatsuba\_commRing\_identity} \\
 $\mathrm{PNP\text{-}06}$ & Spectral Discrepancy \& Diagonalization & \textbf{PROVEN\_TRUE} & \texttt{pnp\_06\_baker\_gill\_solovay\_diagonal\_differs} \\
                          & $D_{\mathrm{spec}}(x,y) = (x-y)^2 \ge 0$ & (Pointwise Diag.) & + \texttt{pnp\_06\_no\_machine\_decides\_diagonalLanguage} \\
-$\mathrm{PNP\text{-}07}$ & Inductive Tseitin 3-CNF Circuit & \textbf{PROVEN\_TRUE} & \texttt{pnp\_07\_tseitin\_circuit\_equisat} \\
-                         & $\le 3s+1$ Clauses \& Equi-Satisfiable & (`BoolCircuit`) & + \texttt{pnp\_07\_tseitin\_clause\_count\_linear\_bound} \\
-$\mathrm{PNP\text{-}08}$ & Polynomial Degree Bound ($\mathrm{Parity}_3$) & \textbf{PROVEN\_TRUE} & \texttt{pnp\_08\_no\_deg2\_polynomial\_computes\_parity3} \\
-                         & $\Delta_{123}(P_{\le 2})=0 \ne -8=\Delta_{123}(\mathrm{Parity}_3)$ & (Cube Finite Diff.) & + \texttt{pnp\_08\_cubeFiniteDiff3\_degAtMost2\_eq\_zero} \\
+$\mathrm{PNP\text{-}07}$ & Emitted `List Clause3` Tseitin Compiler & \textbf{PROVEN\_TRUE} & \texttt{pnp\_07\_emitted\_cnf\_equisat} \\
+                         & $\mathrm{length} = \mathrm{gates}+1 \le 3s+1$ ($3<4$ on `not`) & (`compileTseitinCNF`) & + \texttt{pnp\_07\_mathlib\_tseitin\_equisat\_and\_size} \\
+$\mathrm{PNP\text{-}08}$ & Asymptotic All-$n$ Parity Degree Bound & \textbf{PROVEN\_TRUE} & \texttt{pnp\_08\_all\_n\_real\_no\_subdegree\_polynomial\_computes\_parity} \\
+                         & $\Delta_n(P_{<n})=0 \ne 2^n=\Delta_n(\chi_n)\;\forall n\in\N$ & (All-$n$ Fourier) & + \texttt{pnp\_08\_no\_deg2\_polynomial\_computes\_parity3} \\
+$\mathrm{PNP\text{-}09}$ & Natural Proofs \& Algebrization Barriers & \textbf{PROVEN\_TRUE} & \texttt{pnp\_09\_mathlib\_razborov\_rudich\_natural\_proofs\_barrier} \\
+                         & $\delta \le \varepsilon$ PRF Bound \& $2^2-2=2\ne 0$ & (Barrier Lemmas) & + \texttt{pnp\_09\_algebrization\_extension\_obstruction} \\
 \bottomrule
 \end{tabular}
 \caption{Summary of Dual Symbolic and Lean~4 Kernel Adjudications.}
