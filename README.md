@@ -2,7 +2,7 @@
 
 [![Lean 4.15.0](https://img.shields.io/badge/Lean-v4.15.0-blue)](./lean/PvsNPMathlib.lean) [![Mathlib v4.15.0](https://img.shields.io/badge/Mathlib-v4.15.0-purple)](./lean/PvsNPMathlib.lean) [![Zero Sorrys](https://img.shields.io/badge/sorry-0-brightgreen)](./lean/PvsNPMathlib.lean) [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](./LICENSE)
 
-This repository provides machine-checked **Lean 4.15.0** formalizations in two complementary layers alongside a standalone **LaTeX** manuscript ([`latex/p_vs_np_adjudication.tex`](./latex/p_vs_np_adjudication.tex)):
+This repository provides machine-checked **Lean 4.15.0** formalizations of algebraic satisfiability reductions, diagonalization barriers, and explicit counterexamples to continuous-relaxation and monotone-circuit shortcut lemmas in two complementary layers alongside a standalone **LaTeX** manuscript ([`latex/p_vs_np_adjudication.tex`](./latex/p_vs_np_adjudication.tex)):
 
 1. **Analytic & Algebraic `Mathlib` v4.15.0 Formalization over $\mathbb{R}$, `[CommRing R]`, `Bool`, and Arbitrary Index Types $\alpha$** ([`lean/PvsNPMathlib.lean`](./lean/PvsNPMathlib.lean)):
    - Formulates continuous polynomial/LP/SDP relaxations over $\mathbb{R}$ (`Mathlib.Data.Real.Basic`), algebraic circuit identities over arbitrary commutative rings `[CommRing R]`, Boolean gadget equi-satisfiability over `Bool`, and Baker–Gill–Solovay diagonalization over any indexing type `α`.
@@ -13,7 +13,7 @@ This repository provides machine-checked **Lean 4.15.0** formalizations in two c
 
 ## Mathematical Overview (`PNP-01` through `PNP-06`)
 
-### 1. Unconditional $\mathbf{NP}$-Completeness Reductions, Arithmetization & Barrier Theorems (`PNP-01`, `PNP-02`, `PNP-06` — PROVEN)
+### 1. Unconditional Satisfiability Reductions, Arithmetization & Relativization Barriers (`PNP-01`, `PNP-02`, `PNP-06` — PROVEN)
 - **`PNP-01` (Cook–Levin / Karp Quartic Arithmetization Penalty over $\mathbb{R}$)**:
   Defines `cookLevinPenalty (x : ℝ) : ℝ := x^4 - 2*x^3 + 2*x^2 - 2*x + 1`. Proves the Sum-of-Squares decomposition `(x^2 - x)^2 + (x - 1)^2 ≥ 0` over $\mathbb{R}$ and the exact real zero-locus `cookLevinPenalty x = 0 ↔ x = 1`.
 - **`PNP-02` (Tseitin $3\text{-SAT}$ $\mathrm{AND}$-Gate Equi-Satisfiability & Continuous Slack over $\mathbb{R}$)**:
@@ -21,7 +21,7 @@ This repository provides machine-checked **Lean 4.15.0** formalizations in two c
 - **`PNP-06` (Spectral Discrepancy over $\mathbb{R}$ & Baker–Gill–Solovay Relativizing Diagonalization over $\alpha$)**:
   Proves `(x - y)^2 ≥ 0` with `= 0 ↔ x = y` over $\mathbb{R}$, and proves that for any indexing type `α` and evaluation relation `eval : α → α → Bool`, the diagonal language `bgsDiagonalLanguage eval m := !(eval m m)` differs from machine `m` at input `m` (`bgsDiagonalLanguage eval m ≠ eval m m`) and therefore cannot equal `eval m` for any $m : \alpha$.
 
-### 2. Formal Refutations of Candidate $\mathbf{P} = \mathbf{NP}$ and $\mathbf{P} \ne \mathbf{NP}$ Proof Lemmas (`PNP-03`, `PNP-04`, `PNP-05` — REFUTED BY COUNTEREXAMPLE)
+### 2. Formal Counterexamples to Continuous-Relaxation & Monotone-Circuit Shortcut Lemmas (`PNP-03`, `PNP-04`, `PNP-05` — REFUTED BY COUNTEREXAMPLE)
 - **`PNP-03` (Refutation of Pairwise $2\text{-SAT}$ Projection Heuristics over $\mathbb{R}$ & `Bool`)**:
   Proves that `pairwise2SatSurrogate (1 : ℝ) (1 : ℝ) = -4 < 0` and verifies over `Bool` that the complete 8-clause $3\text{-CNF}$ contradiction on 3 variables is globally unsatisfiable despite every 2-variable projection being satisfiable.
 - **`PNP-04` (Refutation of Zero LP Integrality Gap on Odd Cycle $K_3$ over $\mathbb{R}$ & `Bool`)**:
@@ -53,11 +53,11 @@ pdflatex latex/p_vs_np_adjudication.tex
 
 ## Summary Table
 
-| ID | Mathematical Claim / Candidate Proof Lemma | Verdict | Mathlib Theorem(s) (`PvsNPMathlib.lean`) | Core Theorem(s) (`PvsNPAdjudication.lean`) |
+| ID | Formalized Statement / Candidate Shortcut Lemma | Verdict | Mathlib Theorem(s) (`PvsNPMathlib.lean`) | Core Theorem(s) (`PvsNPAdjudication.lean`) |
 | :--- | :--- | :--- | :--- | :--- |
 | `PNP-01` | **Cook–Levin Quartic Arithmetization Penalty**: $E_1(x) = (x^2-x)^2 + (x-1)^2 \ge 0$ ($=0 \iff x=1$) | **PROVEN** | `pnp_01_cookLevinPenalty_sos_and_zero_locus` | `pnp_01_cook_levin_gadget_nonneg`, `pnp_01_cook_levin_gadget_sos_and_zero_locus` |
 | `PNP-02` | **Tseitin $3\text{-SAT}$ Equi-Satisfiability & Slack**: $\mathcal{T}_{\land}(x,y,z) \iff z = x\land y$ and $S(x)=(x+1)^2\ge 0$ | **PROVEN** | `pnp_02_tseitinAndGadget_equisat`, `pnp_02_tseitinSlack_sos` | `pnp_02_tseitin_and_gadget_equisat`, `pnp_02_tseitin_and_gadget_equisat_and_slack` |
-| `PNP-03` | **Candidate $\mathbf{P}=\mathbf{NP}$ Lemma**: Pairwise $2\text{-SAT}$ relaxation $L_3(x,y) = 2(x+y)(1-x-y) \ge 0$ on $\{0,1\}^2$ | **REFUTED** | `pnp_03_pairwise2Sat_projection_refuted` | `pnp_03_pairwise_2sat_projection_refuted` |
-| `PNP-04` | **Candidate $\mathbf{P}=\mathbf{NP}$ Lemma**: Odd-cycle $K_3$ LP relaxation has zero integrality gap | **REFUTED** | `pnp_04_k3_lp_integrality_gap_over_reals` | `pnp_04_k3_lp_integrality_gap_refuted` |
-| `PNP-05` | **Candidate $\mathbf{P}\ne\mathbf{NP}$ Lemma**: Non-monotone circuits have no cancellation advantage over monotone circuits | **REFUTED** | `pnp_05_karatsuba_commRing_identity`, `pnp_05_cancellation_witness_neg` | `pnp_05_non_monotone_cancellation_refuted`, `pnp_05_karatsuba_three_mult_identity` |
+| `PNP-03` | **Relaxation Shortcut Lemma**: Pairwise $2\text{-SAT}$ surrogate $L_3(x,y) = 2(x+y)(1-x-y) \ge 0$ on $\{0,1\}^2$ | **REFUTED** | `pnp_03_pairwise2Sat_projection_refuted` | `pnp_03_pairwise_2sat_projection_refuted` |
+| `PNP-04` | **Relaxation Shortcut Lemma**: Odd-cycle $K_3$ LP relaxation has zero integrality gap | **REFUTED** | `pnp_04_k3_lp_integrality_gap_over_reals` | `pnp_04_k3_lp_integrality_gap_refuted` |
+| `PNP-05` | **Circuit Shortcut Lemma**: Non-monotone circuits have no cancellation advantage over monotone circuits | **REFUTED** | `pnp_05_karatsuba_commRing_identity`, `pnp_05_cancellation_witness_neg` | `pnp_05_non_monotone_cancellation_refuted`, `pnp_05_karatsuba_three_mult_identity` |
 | `PNP-06` | **Spectral Discrepancy & BGS Relativizing Diagonalization**: $D_{\mathrm{spec}}(x,y)=(x-y)^2\ge 0$ & $\mathrm{diag}(m)\ne\mathrm{eval}(m,m)$ | **PROVEN** | `pnp_06_spectralDiscrepancy_sos`, `pnp_06_bgs_diagonalization_barrier`, `pnp_06_no_machine_decides_diagonalLanguage` | `pnp_06_spectral_discrepancy_and_diagonalization_barrier`, `pnp_06_baker_gill_solovay_diagonal_differs` |
