@@ -41,9 +41,9 @@
 \newcommand{\ClassP}{\mathbf{P}}
 \newcommand{\ClassNP}{\mathbf{NP}}
 
-\title{\textbf{Formal Reduction Invariants, Complexity Barriers, and Adversarial Falsification of Candidate Proof Lemmas for $\ClassP$ vs.\ $\ClassNP$}\\
+\title{\textbf{Formal Satisfiability Gadgets, Pointwise Diagonalization Lemmas, and Adversarial Falsification of Candidate Shortcut Lemmas}\\
 \large Formal Verification via Sum-of-Squares Identities and Lean~4}
-\author{Formal Mathematics \& Automated Reasoning Group}}
+\author{Formal Mathematics \& Automated Reasoning Group}
 \date{October 23, 2026}
 
 \begin{document}
@@ -51,10 +51,10 @@
 \maketitle
 
 \begin{abstract}
-The $\ClassP$ versus $\ClassNP$ problem, introduced independently by Stephen Cook (1971) and Leonid Levin (1973), asks whether every language accepted by a non-deterministic polynomial-time Turing machine can also be decided by a deterministic polynomial-time Turing machine ($\ClassP \stackrel{?}{=} \ClassNP$). Because $\ClassP$ vs.\ $\ClassNP$ remains an open Millennium Prize Problem obstructed by three foundational metamathematical barriers---\emph{Relativization} (Baker--Gill--Solovay, 1975), \emph{Natural Proofs} (Razborov--Rudich, 1997), and \emph{Algebrization} (Aaronson--Wigderson, 2009)---any sound formal theorem-proving engine must operate in two machine-checkable modes:
-(1)~\emph{Unconditional Reductions, Arithmetization \& Barrier Theorems}, proving exact algebraic identities and boolean equivalences for $\ClassNP$-completeness reductions and complexity barriers ($\mathrm{PNP\text{-}01}$, $\mathrm{PNP\text{-}02}$, $\mathrm{PNP\text{-}06}$); and
-(2)~\emph{Adversarial Falsification of Candidate $\ClassP = \ClassNP$ and $\ClassP \ne \ClassNP$ Proof Lemmas}, constructively refuting recurring fallacies in attempted resolutions of $\ClassP$ vs.\ $\ClassNP$ ($\mathrm{PNP\text{-}03}$, $\mathrm{PNP\text{-}04}$, $\mathrm{PNP\text{-}05}$).
-Every theorem and counterexample in this manuscript has been independently verified by the \textbf{Lean~4} theorem prover (\texttt{lean/PvsNPAdjudication.lean}) with zero \texttt{sorry} placeholders and zero custom axioms.
+The $\ClassP$ versus $\ClassNP$ problem, introduced independently by Stephen Cook (1971) and Leonid Levin (1973), asks whether every language accepted by a non-deterministic polynomial-time Turing machine can also be decided by a deterministic polynomial-time Turing machine ($\ClassP \stackrel{?}{=} \ClassNP$). Because $\ClassP$ vs.\ $\ClassNP$ remains an open problem, formal verification of proposed reductions and candidate lemmas benefits from operating in two complementary, machine-checkable modes:
+(1)~\emph{Unconditional Satisfiability Gadgets, Arithmetization \& Pointwise Diagonalization Lemmas}, proving exact algebraic identities and boolean equivalences for single-variable penalty gadgets, single-gate Tseitin encodings, and abstract diagonalization ($\mathrm{PNP\text{-}01}$, $\mathrm{PNP\text{-}02}$, $\mathrm{PNP\text{-}06}$); and
+(2)~\emph{Adversarial Falsification of Candidate Shortcut Lemmas}, constructively refuting recurring local-to-global and algebraic-margin fallacies ($\mathrm{PNP\text{-}03}$, $\mathrm{PNP\text{-}04}$, $\mathrm{PNP\text{-}05}$).
+Every theorem and counterexample in this manuscript has been independently verified by the \textbf{Lean~4} theorem prover (\texttt{lean/PvsNPMathlib.lean} and \texttt{lean/PvsNPAdjudication.lean}) with zero \texttt{sorry} placeholders and zero custom axioms.
 \end{abstract}
 
 \tableofcontents
@@ -80,12 +80,12 @@ Attempted proofs of either $\ClassP = \ClassNP$ or $\ClassP \ne \ClassNP$ fail f
 \end{enumerate}
 
 % ============================================================================
-\section{Cook--Levin Quartic Arithmetization Penalty (\texorpdfstring{$\mathrm{PNP\text{-}01}$}{PNP-01})}
+\section{Single-Variable Quartic Arithmetization Penalty (\texorpdfstring{$\mathrm{PNP\text{-}01}$}{PNP-01})}
 % ============================================================================
 
-In algebraic complexity and polynomial optimization reductions from $\mathrm{SAT}$ to real polynomial minimization, each boolean variable $x_i \in \{0, 1\}$ is embedded into $\R$ via the non-negative quartic double-well potential $W(x_i) = x_i^2(x_i - 1)^2 = (x_i^2 - x_i)^2$, while each clause $C$ is mapped to a non-negative polynomial square $P_C(x)^2$.
+In algebraic polynomial-optimization encodings of boolean constraints, a single boolean variable $x \in \{0, 1\}$ is embedded into $\R$ via the non-negative quartic double-well potential $W(x) = x^2(x - 1)^2 = (x^2 - x)^2$, and a positive unit clause $x = 1$ is represented by $(x - 1)^2$. (Note: this unit formalizes the single-variable polynomial penalty identity and its unique real zero rather than the full Cook--Levin Turing-machine tableau reduction.)
 
-\begin{theorem}[$\mathrm{PNP\text{-}01}$: Cook--Levin Boolean Domain and Unit-Clause SOS Equivalence]\label{thm:pnp01}
+\begin{theorem}[$\mathrm{PNP\text{-}01}$: Single-Variable Boolean-Domain and Unit-Clause SOS Equivalence]\label{thm:pnp01}
 For $x \in \R$, define the combined boolean-domain and positive unit-clause penalty functional
 \begin{equation}
   E_1(x) \;\coloneqq\; x^4 - 2x^3 + 2x^2 - 2x + 1.
@@ -109,12 +109,12 @@ Since $(x^2 - x)^2 \ge 0$ and $(x - 1)^2 \ge 0$ for all $x \in \R$, their sum sa
 \end{proof}
 
 % ============================================================================
-\section{Tseitin \texorpdfstring{$3\text{-SAT}$}{3-SAT} Reduction Equi-Satisfiability (\texorpdfstring{$\mathrm{PNP\text{-}02}$}{PNP-02})}
+\section{Tseitin Single \texorpdfstring{$\mathrm{AND}$}{AND}-Gate Equi-Satisfiability (\texorpdfstring{$\mathrm{PNP\text{-}02}$}{PNP-02})}
 % ============================================================================
 
-To reduce arbitrary boolean circuits or $k\text{-CNF}$ formulas to $3\text{-SAT}$ with only linear blowup, Tseitin (1968) introduced fresh auxiliary variables $z$ representing internal gate outputs $z \leftrightarrow (x \land y)$.
+In Tseitin's (1968) clause-encoding construction, an auxiliary boolean wire $z$ is constrained to equal the conjunction $x \land y$ of two inputs via three 3-CNF clauses. (Note: this unit formalizes the local 3-clause $\mathrm{AND}$-gate equivalence and a scalar quadratic-over-linear slack identity rather than a full multi-gate circuit reduction or complexity bound.)
 
-\begin{theorem}[$\mathrm{PNP\text{-}02}$: Tseitin $\mathrm{AND}$-Gate Equi-Satisfiability and Linear Clause Slack]\label{thm:pnp02}
+\begin{theorem}[$\mathrm{PNP\text{-}02}$: Tseitin $\mathrm{AND}$-Gate Equi-Satisfiability and Quadratic-over-Linear Slack]\label{thm:pnp02}
 Let $x, y, z \in \{0, 1\}$ be boolean variables, and define the 3-clause Tseitin $\mathrm{AND}$ gadget
 \begin{equation}
   \mathcal{T}_{\land}(x, y, z) \;\coloneqq\; (\neg x \lor \neg y \lor z) \;\land\; (x \lor \neg z) \;\land\; (y \lor \neg z).
@@ -137,7 +137,7 @@ For part~(1), if $z = (x \land y)$, then whenever $z = 1$ we have $x = 1$ and $y
 \end{proof}
 
 % ============================================================================
-\section{Spectral Discrepancy and the Relativization Barrier (\texorpdfstring{$\mathrm{PNP\text{-}06}$}{PNP-06})}
+\section{Spectral Discrepancy and Abstract Pointwise Diagonalization (\texorpdfstring{$\mathrm{PNP\text{-}06}$}{PNP-06})}
 % ============================================================================
 
 \begin{theorem}[$\mathrm{PNP\text{-}06}$: Spectral Discrepancy SOS and Abstract Pointwise Diagonalization Lemma]\label{thm:pnp06}
@@ -195,10 +195,10 @@ In \texttt{lean/PvsNPMathlib.lean} (\texttt{pnp\_04\_k3\_lp\_integrality\_gap\_o
 \end{enumerate}
 \end{counterexample}
 
-\subsection{Refutation of No-Cancellation Monotone Transfer via Karatsuba's Identity (\texorpdfstring{$\mathrm{PNP\text{-}05}$}{PNP-05})}
+\subsection{Refutation of Bilinear Margin Non-Negativity and Karatsuba's Ring Identity (\texorpdfstring{$\mathrm{PNP\text{-}05}$}{PNP-05})}
 
 \begin{candidate}[$\mathrm{PNP\text{-}05}$ --- FALSE]\label{cand:pnp05}
-Algebraic and boolean circuits with negation/subtraction cannot cancel cross-terms to reduce gate count below monotone circuits; specifically, the Karatsuba bilinear margin $K(x, y) = (x + y)^2 - (x - y)^2 - 5xy$ satisfies $K(x, y) \ge 0$ for all $(x, y) \in \Q^2$.
+The candidate bilinear margin $K(x, y) = (x + y)^2 - (x - y)^2 - 5xy$ satisfies $K(x, y) \ge 0$ for all $(x, y) \in \R^2$.
 \end{candidate}
 
 \begin{counterexample}[Refutation of Candidate Lemma~\ref{cand:pnp05}]
@@ -206,11 +206,11 @@ Expanding $K(x, y) = (x^2 + 2xy + y^2) - (x^2 - 2xy + y^2) - 5xy = -xy$ and eval
 \begin{equation}
   K(1, 1) \;=\; 4 - 0 - 5 \;=\; -1 \;<\; 0.
 \end{equation}
-More generally, in Lean~4 (\texttt{pnp\_05\_karatsuba\_three\_mult\_identity}) we prove that for any $a_1, a_0, b_1, b_0 \in \Z$, the bilinear cross-term $a_1 b_0 + a_0 b_1$ is computed using only \textbf{three} multiplications $z_2 = a_1 b_1$, $z_0 = a_0 b_0$, and $z_3 = (a_1 + a_0)(b_1 + b_0)$ via subtraction cancellation:
+Furthermore, in Lean~4 (\texttt{pnp\_05\_karatsuba\_three\_mult\_identity} and \texttt{pnp\_05\_karatsuba\_commRing\_identity}) we prove that in any commutative ring $R$, the bilinear cross-term $a_1 b_0 + a_0 b_1$ satisfies the algebraic cancellation identity
 \begin{equation}
   (a_1 + a_0)(b_1 + b_0) - a_1 b_1 - a_0 b_0 \;=\; a_1 b_0 + a_0 b_1,
 \end{equation}
-demonstrating constructively why monotone lower bounds (which forbid subtraction/negation) do not transfer automatically to general circuits.
+expressing the degree-1 convolution cross-term as a linear combination of the three products $z_2 = a_1 b_1$, $z_0 = a_0 b_0$, and $z_3 = (a_1 + a_0)(b_1 + b_0)$. (Note: this formalizes the algebraic ring identity and refutes $K(x,y) \ge 0$; it does not formalize a general Boolean or algebraic circuit lower-bound theorem.)
 \end{counterexample}
 
 % ============================================================================
@@ -224,21 +224,21 @@ demonstrating constructively why monotone lower bounds (which forbid subtraction
 \toprule
 \textbf{Unit} & \textbf{Subject} & \textbf{Formal Verdict} & \textbf{Lean~4 Theorem / Certificate} \\
 \midrule
-$\mathrm{PNP\text{-}01}$ & Cook--Levin Quartic Gadget & \textbf{PROVEN\_TRUE} & \texttt{pnp\_01\_cook\_levin\_gadget\_sos\_and\_zero\_locus} \\
+$\mathrm{PNP\text{-}01}$ & Single-Variable Quartic Penalty & \textbf{PROVEN\_TRUE} & \texttt{pnp\_01\_cookLevinPenalty\_sos\_and\_zero\_locus} \\
                          & $E_1(x) = (x^2-x)^2 + (x-1)^2 \ge 0$ & ($\mathrm{SOS}$ Identity) & $E_1(x) = 0 \iff x = 1$ \\
-$\mathrm{PNP\text{-}02}$ & Tseitin $3\text{-SAT}$ Reduction & \textbf{PROVEN\_TRUE} & \texttt{pnp\_02\_tseitin\_and\_gadget\_equisat} \\
-                         & $\mathcal{T}_{\land}(x,y,z) \iff z = x\land y$ & ($\mathrm{SOS}$ + `Bool`) & + $S(x) = (x+1)^2 \ge 0$ \\
-$\mathrm{PNP\text{-}03}$ & Pairwise $2\text{-SAT}$ Heuristic & \textbf{REFUTED\_FALSE} & \texttt{pnp\_03\_pairwise\_2sat\_projection\_refuted} \\
-                         & $L_3(x,y) = 2(x+y)(1-x-y)$ & (Witness $(1,1)$) & $L_3(1,1) = -4 < 0$ + $3\text{-CNF}$ UNSAT \\
-$\mathrm{PNP\text{-}04}$ & Odd-Cycle $K_3$ LP Relaxation & \textbf{REFUTED\_FALSE} & \texttt{pnp\_04\_k3\_lp\_integrality\_gap\_refuted} \\
-                         & $G_{\mathrm{LP}}(b) = 16b^2 - 16b + 3$ & (Witness $b = \frac{1}{2}$) & $G_{\mathrm{LP}}(1,2) = -4 < 0 \land \sum x_i \ge 2$ \\
-$\mathrm{PNP\text{-}05}$ & Monotone vs.\ Cancellation Circuits & \textbf{REFUTED\_FALSE} & \texttt{pnp\_05\_non\_monotone\_cancellation\_refuted} \\
-                         & $K(x,y) = (x+y)^2-(x-y)^2-5xy$ & (Witness $(1,1)$) & + \texttt{pnp\_05\_karatsuba\_three\_mult\_identity} \\
-$\mathrm{PNP\text{-}06}$ & Spectral Discrepancy \& Barrier & \textbf{PROVEN\_TRUE} & \texttt{pnp\_06\_baker\_gill\_solovay\_diagonal\_differs} \\
-                         & $D_{\mathrm{spec}}(x,y) = (x-y)^2 \ge 0$ & ($\mathrm{SOS}$ + Diag.) & $\mathrm{diag}(m) \ne \mathrm{eval}(m, m)$ \\
+$\mathrm{PNP\text{-}02}$ & Tseitin $\mathrm{AND}$-Gate \& Slack & \textbf{PROVEN\_TRUE} & \texttt{pnp\_02\_tseitin\_and\_gadget\_equisat} \\
+                         & $\mathcal{T}_{\land}(x,y,z) \iff z = x\land y$ & ($\mathrm{SOS}$ + `Bool`) & + \texttt{pnp\_02\_tseitinRealSlack\_sos} \\
+$\mathrm{PNP\text{-}03}$ & Pairwise $2\text{-SAT}$ \& Quantifier Gap & \textbf{REFUTED\_FALSE} & \texttt{pnp\_03\_pairwise\_2sat\_projection\_refuted} \\
+                         & $L_3(1,1) = -4 < 0$ & ($\forall i \exists z_i$ vs $\exists z \forall i$) & + \texttt{pnp\_03\_clausewise\_vs\_global\_existential\_quantifier\_gap} \\
+$\mathrm{PNP\text{-}04}$ & Odd-Cycle $K_3$ LP/IP Optimality & \textbf{REFUTED\_FALSE} & \texttt{pnp\_04\_k3\_lp\_integrality\_gap\_over\_reals} \\
+                         & $\mathrm{LP} = \frac{3}{2}$ vs.\ $\mathrm{IP} = 2$ & (Exact Gap $\frac{4}{3}$) & + \texttt{pnp\_04\_k3\_lp\_integrality\_gap\_refuted} \\
+$\mathrm{PNP\text{-}05}$ & Bilinear Margin \& Karatsuba Identity & \textbf{REFUTED\_FALSE} & \texttt{pnp\_05\_non\_monotone\_cancellation\_refuted} \\
+                         & $K(x,y) = -xy,\; K(1,1)=-1<0$ & (`[CommRing R]`) & + \texttt{pnp\_05\_karatsuba\_commRing\_identity} \\
+$\mathrm{PNP\text{-}06}$ & Spectral Discrepancy \& Diagonalization & \textbf{PROVEN\_TRUE} & \texttt{pnp\_06\_baker\_gill\_solovay\_diagonal\_differs} \\
+                         & $D_{\mathrm{spec}}(x,y) = (x-y)^2 \ge 0$ & (Pointwise Diag.) & + \texttt{pnp\_06\_no\_machine\_decides\_diagonalLanguage} \\
 \bottomrule
 \end{tabular}
-\caption{Summary of Dual Symbolic and Lean~4 Kernel Adjudications for $\ClassP$ vs.\ $\ClassNP$.}
+\caption{Summary of Dual Symbolic and Lean~4 Kernel Adjudications.}
 \label{tab:pnp-g3-summary}
 \end{table}
 
