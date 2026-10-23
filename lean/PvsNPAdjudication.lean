@@ -132,14 +132,35 @@ def unsat3CnfContradiction (x1 x2 x3 : Bool) : Bool :=
   (!x1 || !x2 ||  x3) &&
   (!x1 || !x2 || !x3)
 
-/-- Theorem PNP-03: Refutes universal non-negativity of `pairwise2SatMargin` at `(1, 1)` (`-4 < 0`)
-    and proves that `unsat3CnfContradiction` has no satisfying boolean assignment in `Bool^3`. -/
+/-- Clause-wise existential projection onto `(x1, x2)`: each of the 8 clauses
+    independently chooses its own witness `z_i ∈ Bool` (`⋀_{i=1}^8 ∃ z_i, C_i(x1, x2, z_i)`). -/
+def clausewiseProjected3Cnf (x1 x2 : Bool) : Bool :=
+  (( x1 ||  x2 || true) || ( x1 ||  x2 || false)) &&
+  (( x1 ||  x2 || !true) || ( x1 ||  x2 || !false)) &&
+  (( x1 || !x2 || true) || ( x1 || !x2 || false)) &&
+  (( x1 || !x2 || !true) || ( x1 || !x2 || !false)) &&
+  ((!x1 ||  x2 || true) || (!x1 ||  x2 || false)) &&
+  ((!x1 ||  x2 || !true) || (!x1 ||  x2 || !false)) &&
+  ((!x1 || !x2 || true) || (!x1 || !x2 || false)) &&
+  ((!x1 || !x2 || !true) || (!x1 || !x2 || !false))
+
+/-- Global existential projection onto `(x1, x2)`: a single witness `z ∈ Bool`
+    must simultaneously satisfy all 8 clauses (`∃ z, ⋀_{i=1}^8 C_i(x1, x2, z)`). -/
+def globalExistentialProjected3Cnf (x1 x2 : Bool) : Bool :=
+  unsat3CnfContradiction x1 x2 true || unsat3CnfContradiction x1 x2 false
+
+/-- Theorem PNP-03: Refutes universal non-negativity of `pairwise2SatMargin` at `(1, 1)` (`-4 < 0`),
+    proves that `unsat3CnfContradiction` has no satisfying boolean assignment in `Bool^3`,
+    and establishes the quantifier separation between clause-wise projection (`true` for all `x1, x2`)
+    and global existential projection (`false` for all `x1, x2`). -/
 theorem pnp_03_pairwise_2sat_projection_refuted :
     pairwise2SatMargin 1 0 = 0 ∧
     pairwise2SatMargin 0 0 = 0 ∧
     pairwise2SatMargin 1 1 = -4 ∧
     pairwise2SatMargin 1 1 < 0 ∧
-    (∀ (x1 x2 x3 : Bool), unsat3CnfContradiction x1 x2 x3 = false) := by
+    (∀ (x1 x2 x3 : Bool), unsat3CnfContradiction x1 x2 x3 = false) ∧
+    (∀ (x1 x2 : Bool), clausewiseProjected3Cnf x1 x2 = true) ∧
+    (∀ (x1 x2 : Bool), globalExistentialProjected3Cnf x1 x2 = false) := by
   decide
 
 /- ============================================================================

@@ -140,18 +140,18 @@ For part~(1), if $z = (x \land y)$, then whenever $z = 1$ we have $x = 1$ and $y
 \section{Spectral Discrepancy and the Relativization Barrier (\texorpdfstring{$\mathrm{PNP\text{-}06}$}{PNP-06})}
 % ============================================================================
 
-\begin{theorem}[$\mathrm{PNP\text{-}06}$: Spectral Discrepancy SOS and Baker--Gill--Solovay Diagonalization]\label{thm:pnp06}
+\begin{theorem}[$\mathrm{PNP\text{-}06}$: Spectral Discrepancy SOS and Abstract Pointwise Diagonalization Lemma]\label{thm:pnp06}
 \begin{enumerate}
   \item \textbf{(Spectral Discrepancy Positivity)}: For any pair of truth-table block densities $(x, y) \in \R^2$, the $L_2$ variance functional $D_{\mathrm{spec}}(x, y) = x^2 - 2xy + y^2$ satisfies the exact SOS identity
   \begin{equation}
     D_{\mathrm{spec}}(x, y) \;=\; (x - y)^2 \;\ge\; 0,
   \end{equation}
   with $D_{\mathrm{spec}}(x, y) = 0 \iff x = y$.
-  \item \textbf{(Relativizing Diagonalization Theorem)}: Let $\mathrm{eval} : \N \times \N \to \{0, 1\}$ be any indexed evaluation table of deterministic machines (relativized to an arbitrary oracle $O$). Define the diagonal language $D(n) \coloneqq 1 - \mathrm{eval}(n, n)$. Then for every machine index $m \in \N$,
+  \item \textbf{(Abstract Pointwise Diagonalization Lemma)}: Let $\mathrm{eval} : \alpha \times \alpha \to \{0, 1\}$ be any indexed boolean evaluation table. Define the diagonal language $D(n) \coloneqq 1 - \mathrm{eval}(n, n)$. Then for every index $m \in \alpha$,
   \begin{equation}
-    D(m) \;\ne\; \mathrm{eval}(m, m).
+    D(m) \;\ne\; \mathrm{eval}(m, m),
   \end{equation}
-  Because this proof depends only on the input--output table $\mathrm{eval}$ and is invariant under attaching any oracle $O$ (including a $\mathbf{PSPACE}$-complete oracle $A$ where $\ClassP^A = \ClassNP^A$), pure diagonalization cannot resolve $\ClassP$ vs.\ $\ClassNP$.
+  and consequently no row $\mathrm{eval}(m, \cdot)$ coincides with $D$. (Note: this theorem formalizes the abstract Cantor/Kleene diagonalization step underlying relativizing diagonalization arguments; establishing the full Baker--Gill--Solovay complexity barrier additionally requires formalizing polynomial time bounds and oracle query tapes.)
 \end{enumerate}
 \end{theorem}
 
@@ -162,7 +162,7 @@ For part~(1), if $z = (x \land y)$, then whenever $z = 1$ we have $x = 1$ and $y
 \subsection{Refutation of Pairwise \texorpdfstring{$2\text{-SAT}$}{2-SAT} Projection Heuristics (\texorpdfstring{$\mathrm{PNP\text{-}03}$}{PNP-03})}
 
 \begin{candidate}[$\mathrm{PNP\text{-}03}$ --- FALSE]\label{cand:pnp03}
-The pairwise $2\text{-SAT}$ mutex relaxation functional $L_3(x, y) = 2(x + y)(1 - x - y) = 2x + 2y - 2x^2 - 4xy - 2y^2$ is non-negative across all boolean assignments $(x, y) \in \{0, 1\}^2$, and local 2-variable consistency implies global $3\text{-CNF}$ satisfiability.
+The pairwise $2\text{-SAT}$ mutex relaxation functional $L_3(x, y) = 2(x + y)(1 - x - y) = 2x + 2y - 2x^2 - 4xy - 2y^2$ is non-negative across all boolean assignments $(x, y) \in \{0, 1\}^2$, and clause-wise 2-variable projection $\bigwedge_{i=1}^{m} \exists x_{3,i}\, C_i(x_1, x_2, x_{3,i})$ implies global existential satisfiability $\exists x_3 \bigwedge_{i=1}^{m} C_i(x_1, x_2, x_3)$.
 \end{candidate}
 
 \begin{counterexample}[Refutation of Candidate Lemma~\ref{cand:pnp03}]
@@ -170,7 +170,11 @@ While $L_3(0, 0) = 0$, $L_3(1, 0) = 0$, and $L_3(0, 1) = 0$, evaluating $L_3$ at
 \begin{equation}
   L_3(1, 1) \;=\; 2 + 2 - 2 - 4 - 2 \;=\; -4 \;<\; 0.
 \end{equation}
-Furthermore, in Lean~4 (\texttt{pnp\_03\_pairwise\_2sat\_projection\_refuted}), we prove that the 8-clause $3\text{-CNF}$ formula $\Phi(x_1, x_2, x_3) = \bigwedge_{a,b,c \in \{0,1\}} (x_1^a \lor x_2^b \lor x_3^c)$ is globally unsatisfiable ($\Phi(x_1, x_2, x_3) = 0$ for all $(x_1, x_2, x_3) \in \{0, 1\}^3$) even though every 2-variable projection is consistent with $6$ of the $8$ clauses.
+Furthermore, in Lean~4 (\texttt{pnp\_03\_pairwise\_2sat\_projection\_refuted} and \texttt{pnp\_03\_clausewise\_vs\_global\_existential\_quantifier\_gap}), we formalize the exact quantifier gap on the 8-clause $3\text{-CNF}$ contradiction $\Phi(x_1, x_2, x_3) = \bigwedge_{a,b,c \in \{0,1\}} (x_1^a \lor x_2^b \lor x_3^c)$:
+\begin{enumerate}
+  \item Under \emph{clause-wise existential projection} $\bigwedge_{i=1}^{8} \exists z_i \in \{0,1\},\, C_i(x_1, x_2, z_i)$ (where each clause chooses its own witness $z_i$), the projected relaxation evaluates to $\mathrm{true}$ for every $(x_1, x_2) \in \{0, 1\}^2$.
+  \item Under \emph{global existential projection} $\exists z \in \{0,1\} \bigwedge_{i=1}^{8} C_i(x_1, x_2, z)$ (where a single witness $z$ must simultaneously satisfy all 8 clauses), the projection evaluates to $\mathrm{false}$ for every $(x_1, x_2) \in \{0, 1\}^2$, and $\Phi(x_1, x_2, x_3) = \mathrm{false}$ for all $(x_1, x_2, x_3) \in \{0, 1\}^3$.
+\end{enumerate}
 \end{counterexample}
 
 \subsection{Refutation of Zero LP Integrality Gap on Odd Cycles (\texorpdfstring{$\mathrm{PNP\text{-}04}$}{PNP-04})}
@@ -184,7 +188,11 @@ At the integral endpoints $b = 0$ and $b = 1$, $G_{\mathrm{LP}}(0) = G_{\mathrm{
 \begin{equation}
   G_{\mathrm{LP}}\!\left(\frac{1}{2}\right) \;=\; 16\left(\frac{1}{4}\right) - 16\left(\frac{1}{2}\right) + 3 \;=\; 4 - 8 + 3 \;=\; -1 \;<\; 0.
 \end{equation}
-Correspondingly, the fractional LP optimum on $K_3$ is $3 \cdot \frac{1}{2} = \frac{3}{2}$, whereas in Lean~4 (\texttt{pnp\_04\_k3\_lp\_integrality\_gap\_refuted}) we prove by exhaustive boolean case analysis that every integral vertex cover $(x_1, x_2, x_3) \in \{0, 1\}^3$ of $K_3$ satisfies $\sum_{i=1}^{3} x_i \ge 2$ (an exact integrality gap of $\frac{2}{3/2} = \frac{4}{3}$).
+In \texttt{lean/PvsNPMathlib.lean} (\texttt{pnp\_04\_k3\_lp\_integrality\_gap\_over\_reals}), we prove the complete LP and IP optimality bounds over $\R$ and $\mathrm{Bool}$:
+\begin{enumerate}
+  \item Every fractional LP-feasible point $(x_1, x_2, x_3) \in \R^3$ satisfying $x_1+x_2 \ge 1$, $x_2+x_3 \ge 1$, $x_3+x_1 \ge 1$ satisfies $x_1 + x_2 + x_3 \ge \frac{3}{2}$, and $(\frac{1}{2}, \frac{1}{2}, \frac{1}{2})$ achieves $\frac{3}{2}$.
+  \item Every integral vertex cover $(x_1, x_2, x_3) \in \{0, 1\}^3$ of $K_3$ satisfies $\sum_{i=1}^{3} x_i \ge 2$, and $(1, 1, 0)$ achieves $2$, establishing the exact integrality gap $\frac{2}{3/2} = \frac{4}{3}$.
+\end{enumerate}
 \end{counterexample}
 
 \subsection{Refutation of No-Cancellation Monotone Transfer via Karatsuba's Identity (\texorpdfstring{$\mathrm{PNP\text{-}05}$}{PNP-05})}
