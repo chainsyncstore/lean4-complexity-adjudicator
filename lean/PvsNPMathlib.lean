@@ -340,4 +340,203 @@ theorem pnp_06_no_machine_decides_diagonalLanguage {α : Type*} (eval : α → �
   have hm : eval m m = diagonalLanguage eval m := hall m
   exact pnp_06_baker_gill_solovay_diagonal_differs eval m hm.symm
 
+/- ============================================================================
+   SECTION 7: PNP-07 — STRUCTURAL INDUCTION EQUISATISFIABILITY OF TSEITIN 3-CNF
+   TRANSFORMATION ON ARBITRARY-DEPTH BOOLEAN CIRCUITS
+   ============================================================================ -/
+
+/-- Inductive syntax of arbitrary-depth boolean circuits over input variables indexed by `Nat`. -/
+inductive BoolCircuit where
+  | var : Nat → BoolCircuit
+  | not : BoolCircuit → BoolCircuit
+  | and : BoolCircuit → BoolCircuit → BoolCircuit
+  | or  : BoolCircuit → BoolCircuit → BoolCircuit
+  deriving DecidableEq, Repr
+
+/-- Standard recursive boolean evaluation of a `BoolCircuit` under input assignment `env : Nat → Bool`. -/
+def evalCircuit (env : Nat → Bool) : BoolCircuit → Bool
+  | .var i     => env i
+  | .not c     => !(evalCircuit env c)
+  | .and c1 c2 => (evalCircuit env c1) && (evalCircuit env c2)
+  | .or  c1 c2 => (evalCircuit env c1) || (evalCircuit env c2)
+
+/-- Number of internal logic gates (`not`, `and`, `or`) in a `BoolCircuit`. -/
+def gateCount : BoolCircuit → Nat
+  | .var _     => 0
+  | .not c     => 1 + gateCount c
+  | .and c1 c2 => 1 + gateCount c1 + gateCount c2
+  | .or  c1 c2 => 1 + gateCount c1 + gateCount c2
+
+/-- Exact number of 3-CNF clauses emitted by the Tseitin transformation for each internal gate
+    (2 clauses for a `not` gate, 3 clauses for an `and` or `or` gate). -/
+def tseitinGateClauseCount : BoolCircuit → Nat
+  | .var _     => 0
+  | .not c     => 2 + tseitinGateClauseCount c
+  | .and c1 c2 => 3 + tseitinGateClauseCount c1 + tseitinGateClauseCount c2
+  | .or  c1 c2 => 3 + tseitinGateClauseCount c1 + tseitinGateClauseCount c2
+
+/-- Theorem PNP-07a (Linear 3-CNF Clause-Count Bound for Tseitin Transformation):
+    For every boolean circuit `c`, the total number of gate-consistency 3-CNF clauses
+    is at most `3 * gateCount c`, so including the top-level output unit clause gives at most
+    `3 * gateCount c + 1` clauses. -/
+theorem pnp_07_tseitin_clause_count_linear_bound (c : BoolCircuit) :
+    tseitinGateClauseCount c ≤ 3 * gateCount c ∧
+    tseitinGateClauseCount c + 1 ≤ 3 * gateCount c + 1 := by
+  have h : tseitinGateClauseCount c ≤ 3 * gateCount c := by
+    induction c with
+    | var i =>
+      simp [tseitinGateClauseCount, gateCount]
+    | not c1 ih =>
+      simp only [tseitinGateClauseCount, gateCount]
+      omega
+    | and c1 c2 ih1 ih2 =>
+      simp only [tseitinGateClauseCount, gateCount]
+      omega
+    | or c1 c2 ih1 ih2 =>
+      simp only [tseitinGateClauseCount, gateCount]
+      omega
+  exact ⟨h, by omega⟩
+
+/-- Tseitin wire-labeling consistency predicate for a circuit `c` under input assignment
+    `env : Nat → Bool` and wire assignment `wire : BoolCircuit → Bool`.
+    Each gate's local 3-CNF clauses enforce equivalence between `wire sub` and the gate operation
+    applied to its child wires. -/
+def tseitinWireConsistent (env : Nat → Bool) (wire : BoolCircuit → Bool) : BoolCircuit → Prop
+  | .var i     => wire (.var i) = env i
+  | .not c1    =>
+      (wire (.not c1) = !(wire c1)) ∧
+      tseitinWireConsistent env wire c1
+  | .and c1 c2 =>
+      (wire (.and c1 c2) = ((wire c1) && (wire c2))) ∧
+      tseitinWireConsistent env wire c1 ∧
+      tseitinWireConsistent env wire c2
+  | .or c1 c2  =>
+      (wire (.or c1 c2) = ((wire c1) || (wire c2))) ∧
+      tseitinWireConsistent env wire c1 ∧
+      tseitinWireConsistent env wire c2
+
+/-- Theorem PNP-07b (Tseitin Wire Consistency Uniquely Fixes Every Subcircuit Wire):
+    By structural induction on `c : BoolCircuit`, if `tseitinWireConsistent env wire c` holds,
+    then the wire value `wire c` equals the true recursive evaluation `evalCircuit env c`. -/
+theorem pnp_07_tseitin_circuit_soundness (env : Nat → Bool) (wire : BoolCircuit → Bool)
+    (c : BoolCircuit) (hcons : tseitinWireConsistent env wire c) :
+    wire c = evalCircuit env c := by
+  induction c with
+  | var i =>
+    exact hcons
+  | not c1 ih =>
+    rcases hcons with ⟨hgate, hc1⟩
+    rw [hgate, ih hc1, evalCircuit]
+  | and c1 c2 ih1 ih2 =>
+    rcases hcons with ⟨hgate, hc1, hc2⟩
+    rw [hgate, ih1 hc1, ih2 hc2, evalCircuit]
+  | or c1 c2 ih1 ih2 =>
+    rcases hcons with ⟨hgate, hc1, hc2⟩
+    rw [hgate, ih1 hc1, ih2 hc2, evalCircuit]
+
+/-- Theorem PNP-07c (Canonical Evaluation Wire Assignment Satisfies Tseitin Consistency):
+    For any circuit `c` and input environment `env`, choosing `wire := evalCircuit env`
+    satisfies `tseitinWireConsistent env (evalCircuit env) c`. -/
+theorem pnp_07_tseitin_circuit_completeness (env : Nat → Bool) (c : BoolCircuit) :
+    tseitinWireConsistent env (evalCircuit env) c := by
+  induction c with
+  | var i =>
+    rfl
+  | not c1 ih =>
+    exact ⟨rfl, ih⟩
+  | and c1 c2 ih1 ih2 =>
+    exact ⟨rfl, ih1, ih2⟩
+  | or c1 c2 ih1 ih2 =>
+    exact ⟨rfl, ih1, ih2⟩
+
+/-- Theorem PNP-07d (Global Equisatisfiability of Circuit Satisfiability and Tseitin 3-CNF):
+    For every boolean circuit `c : BoolCircuit` and every input assignment `env : Nat → Bool`,
+    `evalCircuit env c = true` if and only if there exists a wire assignment
+    `wire : BoolCircuit → Bool` satisfying `tseitinWireConsistent env wire c` and `wire c = true`. -/
+theorem pnp_07_tseitin_circuit_equisat (c : BoolCircuit) (env : Nat → Bool) :
+    evalCircuit env c = true ↔
+      ∃ wire : BoolCircuit → Bool, tseitinWireConsistent env wire c ∧ wire c = true := by
+  constructor
+  · intro heval
+    exact ⟨evalCircuit env, pnp_07_tseitin_circuit_completeness env c, heval⟩
+  · rintro ⟨wire, hcons, htrue⟩
+    rw [← pnp_07_tseitin_circuit_soundness env wire c hcons]
+    exact htrue
+
+/- ============================================================================
+   SECTION 8: PNP-08 — POLYNOMIAL-METHOD DEGREE LOWER BOUND FOR 3-BIT PARITY
+   OVER `ℝ` VIA BOOLEAN CUBE FINITE DIFFERENCES
+   ============================================================================ -/
+
+/-- The 3-fold boolean cube finite-difference operator `Δ_1 Δ_2 Δ_3 f` over `ℝ`:
+    `∑_{x ∈ {0,1}^3} (-1)^(3 - (x_1 + x_2 + x_3)) f(x_1, x_2, x_3)`. -/
+def cubeFiniteDiff3 (f : ℝ → ℝ → ℝ → ℝ) : ℝ :=
+  f 1 1 1 - f 1 1 0 - f 1 0 1 - f 0 1 1 + f 1 0 0 + f 0 1 0 + f 0 0 1 - f 0 0 0
+
+/-- General 3-variable real polynomial of total degree at most 2:
+    `P(x_1, x_2, x_3) = c0 + c1*x1 + c2*x2 + c3*x3 + c11*x1^2 + c22*x2^2 + c33*x3^2 + c12*x1*x2 + c23*x2*x3 + c13*x1*x3`. -/
+def degAtMost2Poly3 (c0 c1 c2 c3 c11 c22 c33 c12 c23 c13 : ℝ) (x1 x2 x3 : ℝ) : ℝ :=
+  c0 + c1 * x1 + c2 * x2 + c3 * x3 +
+  c11 * x1 ^ 2 + c22 * x2 ^ 2 + c33 * x3 ^ 2 +
+  c12 * x1 * x2 + c23 * x2 * x3 + c13 * x1 * x3
+
+/-- Exact ±1 parity polynomial on `{0, 1}^3`:
+    `paritySign3(x_1, x_2, x_3) = (1 - 2*x_1) * (1 - 2*x_2) * (1 - 2*x_3)`. -/
+def paritySign3 (x1 x2 x3 : ℝ) : ℝ :=
+  (1 - 2 * x1) * (1 - 2 * x2) * (1 - 2 * x3)
+
+/-- Boolean-to-Real embedding `0` or `1`. -/
+def b2r (b : Bool) : ℝ := if b then 1 else 0
+
+/-- Theorem PNP-08a (3-Fold Cube Finite Difference Annihilates Every Degree-`≤ 2` Polynomial):
+    For any real coefficients `c0, ..., c13 : ℝ`, `cubeFiniteDiff3` of `degAtMost2Poly3` is `0`. -/
+theorem pnp_08_cubeFiniteDiff3_degAtMost2_eq_zero
+    (c0 c1 c2 c3 c11 c22 c33 c12 c23 c13 : ℝ) :
+    cubeFiniteDiff3 (degAtMost2Poly3 c0 c1 c2 c3 c11 c22 c33 c12 c23 c13) = 0 := by
+  unfold cubeFiniteDiff3 degAtMost2Poly3
+  ring
+
+/-- Theorem PNP-08b (3-Fold Cube Finite Difference of 3-Bit Parity is `-8 ≠ 0`):
+    `cubeFiniteDiff3 paritySign3 = -8`. -/
+theorem pnp_08_cubeFiniteDiff3_paritySign3_eq_neg_eight :
+    cubeFiniteDiff3 paritySign3 = -8 := by
+  unfold cubeFiniteDiff3 paritySign3
+  norm_num
+
+/-- Theorem PNP-08c (Unconditional Polynomial-Method Degree Lower Bound for 3-Bit Parity):
+    No 3-variable real polynomial of total degree at most 2 can agree with 3-bit `paritySign3`
+    on all 8 vertices of the boolean cube `{0, 1}^3`. Thus any real polynomial computing
+    3-bit parity on `{0, 1}^3` has degree at least 3. -/
+theorem pnp_08_no_deg2_polynomial_computes_parity3
+    (c0 c1 c2 c3 c11 c22 c33 c12 c23 c13 : ℝ) :
+    ¬(∀ x1 x2 x3 : Bool,
+      degAtMost2Poly3 c0 c1 c2 c3 c11 c22 c33 c12 c23 c13
+        (b2r x1) (b2r x2) (b2r x3) =
+      paritySign3 (b2r x1) (b2r x2) (b2r x3)) := by
+  intro hall
+  have h111 : degAtMost2Poly3 c0 c1 c2 c3 c11 c22 c33 c12 c23 c13 1 1 1 = paritySign3 1 1 1 :=
+    hall true true true
+  have h110 : degAtMost2Poly3 c0 c1 c2 c3 c11 c22 c33 c12 c23 c13 1 1 0 = paritySign3 1 1 0 :=
+    hall true true false
+  have h101 : degAtMost2Poly3 c0 c1 c2 c3 c11 c22 c33 c12 c23 c13 1 0 1 = paritySign3 1 0 1 :=
+    hall true false true
+  have h011 : degAtMost2Poly3 c0 c1 c2 c3 c11 c22 c33 c12 c23 c13 0 1 1 = paritySign3 0 1 1 :=
+    hall false true true
+  have h100 : degAtMost2Poly3 c0 c1 c2 c3 c11 c22 c33 c12 c23 c13 1 0 0 = paritySign3 1 0 0 :=
+    hall true false false
+  have h010 : degAtMost2Poly3 c0 c1 c2 c3 c11 c22 c33 c12 c23 c13 0 1 0 = paritySign3 0 1 0 :=
+    hall false true false
+  have h001 : degAtMost2Poly3 c0 c1 c2 c3 c11 c22 c33 c12 c23 c13 0 0 1 = paritySign3 0 0 1 :=
+    hall false false true
+  have h000 : degAtMost2Poly3 c0 c1 c2 c3 c11 c22 c33 c12 c23 c13 0 0 0 = paritySign3 0 0 0 :=
+    hall false false false
+  have hdiff_eq :
+      cubeFiniteDiff3 (degAtMost2Poly3 c0 c1 c2 c3 c11 c22 c33 c12 c23 c13) =
+      cubeFiniteDiff3 paritySign3 := by
+    unfold cubeFiniteDiff3
+    linarith
+  have hzero := pnp_08_cubeFiniteDiff3_degAtMost2_eq_zero c0 c1 c2 c3 c11 c22 c33 c12 c23 c13
+  have hpar := pnp_08_cubeFiniteDiff3_paritySign3_eq_neg_eight
+  linarith
+
 end PvsNPMathlib
