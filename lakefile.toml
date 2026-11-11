@@ -1,6 +1,6 @@
 name = "p-vs-np-lean4-adjudicator"
 version = "0.2.0"
-defaultTargets = ["PvsNPMathlib", "PvsNPAdjudication"]
+defaultTargets = ["PvsNPMathlib", "PvsNPAdjudication", "ComplexitySAT"]
 
 [[require]]
 name = "mathlib"
@@ -16,3 +16,8 @@ roots = ["PvsNPMathlib"]
 name = "PvsNPAdjudication"
 srcDir = "lean"
 roots = ["PvsNPAdjudication"]
+
+[[lean_lib]]
+name = "ComplexitySAT"
+srcDir = "lean"
+roots = ["ComplexitySAT"]

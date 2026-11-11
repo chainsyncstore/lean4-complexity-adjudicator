@@ -11,6 +11,24 @@ This repository provides machine-checked **Lean 4.15.0** formalizations of satis
 
 ---
 
+## Formalizing Complexity & SAT Reductions in Lean 4
+
+Import `ComplexitySAT` for a finite multi-stack Turing machine development on Mathlib v4.15.0. The library uses Mathlib’s existing `Turing.FinTM2` and `Turing.TM2ComputableInPolyTime` model. It defines P and NP for languages over binary strings.
+
+| Module | Checked results |
+| :--- | :--- |
+| [Classes](lean/ComplexitySAT/Classes.lean) | Identity encoding of bitstrings, injective instance/certificate pairing, and equivalence of `PNeqNP` with `¬ PEqNP`. |
+| [MachineBounds](lean/ComplexitySAT/MachineBounds.lean) and [Composition](lean/ComplexitySAT/Composition.lean) | A polynomial output-length bound, an explicit composite machine for functions composed through a bitstring intermediate, and backward closure of P under polynomial-time many-one reductions. |
+| [CNF](lean/ComplexitySAT/CNF.lean) | CNF encoding and decoding, equivalence of Boolean evaluation and satisfaction, a linear certificate-length bound, and correctness of an exhaustive SAT decider. The certificate lemmas check a given assignment against the encoded formula. |
+| [SATVerifier](lean/ComplexitySAT/SATVerifier.lean) | A five-stack CNF verifier with a `6n + 7` step bound for paired input length `n`, and a proof that the encoded CNF satisfiability language belongs to NP. |
+| [Fragments](lean/ComplexitySAT/Fragments.lean) | Syntactic 2-CNF and Horn predicates, a singleton diagonal formula in both fragments, and a selector that fails the stated diagonal stability condition at every input. |
+
+The SAT decider enumerates candidate assignments. The witness theorems concern validation of a supplied certificate. The fragment results concern formula shape. P versus NP remains open.
+
+Build this library with `lake build ComplexitySAT` after fetching the Mathlib cache as shown below.
+
+---
+
 ## Mathematical Overview (`PNP-01` through `PNP-09`)
 
 ### 1. Satisfiability Gadgets, Tseitin Clause Counts, Parity Degree Bounds, and Supporting Lemmas (`PNP-01`, `PNP-02`, `PNP-06`, `PNP-07`, `PNP-08`, `PNP-09` — PROVEN)
