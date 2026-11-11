@@ -217,7 +217,7 @@ expressing the degree-1 convolution cross-term as a linear combination of the th
 \section{Inductive Emitted Tseitin 3-CNF Circuit Compiler (\texorpdfstring{$\mathrm{PNP\text{-}07}$}{PNP-07})}
 % ============================================================================
 
-Extending the single-gate gadget of Section~3 ($\mathrm{PNP\text{-}02}$) to arbitrary-depth boolean circuits, we define the inductive syntax $\mathrm{BoolCircuit}$ (`var`, `not`, `and`, `or`), recursive evaluation $\mathrm{evalCircuit}(\mathrm{env}, C)$, $\mathrm{nodeId}$, $\mathrm{canonicalWireEnv}$, internal gate count $s = \mathrm{gateCount}(C)$, gate clause count $\mathrm{tseitinGateClauseCount}(C)$ ($2$ clauses per $\mathrm{not}$ gate and $3$ clauses per $\mathrm{and}$/$\mathrm{or}$ gate), recursive wire-consistency predicate $\mathrm{tseitinWireConsistent}(\mathrm{env}, \mathrm{wire}, C)$, and the concrete emitted 3-CNF compiler $\mathrm{compileTseitinCNF} : \mathrm{BoolCircuit} \to \mathrm{List}(\mathrm{Clause3}\;\mathrm{BoolCircuit})$ evaluated via $\mathrm{evalCNF3}$ and $\mathrm{tseitin3CNFSat}$.
+Extending the single-gate gadget of Section~3 ($\mathrm{PNP\text{-}02}$) to arbitrary-depth boolean circuits, we define the inductive syntax $\mathrm{BoolCircuit}$ (`var`, `not`, `and`, `or`), recursive evaluation $\mathrm{evalCircuit}(\mathrm{env}, C)$, $\mathrm{nodeId}$, $\mathrm{canonicalWireEnv}$, internal gate count $s = \mathrm{gateCount}(C)$, gate clause count $\mathrm{tseitinGateClauseCount}(C)$ ($2$ clauses per $\mathrm{not}$ gate and $3$ clauses per $\mathrm{and}$/$\mathrm{or}$ gate), recursive wire-consistency predicate $\mathrm{tseitinWireConsistent}(\mathrm{env}, \mathrm{wire}, C)$, and the concrete emitted 3-CNF compiler $\mathrm{compileTseitinCNF} : \mathrm{BoolCircuit} \to \mathrm{List}(\mathrm{Clause3}\;\mathrm{BoolCircuit})$ evaluated via $\mathrm{evalCNF3}$ and $\mathrm{tseitin3CNFSat}$. The predicate $\mathrm{tseitin3CNFSat}$ requires wire consistency for the fixed input environment as well as satisfaction of the emitted clause list.
 
 \begin{theorem}[$\mathrm{PNP\text{-}07}$: Concrete Emitted 3-CNF Length Bound, Strict $\mathrm{NOT}$-Gate Inequality, and Structural Induction Equi-Satisfiability]\label{thm:pnp07}
 For every boolean circuit $C : \mathrm{BoolCircuit}$ with $s = \mathrm{gateCount}(C)$ internal gates and every input environment $\mathrm{env} : \N \to \{0, 1\}$:
@@ -244,14 +244,14 @@ Over $\R$ and $\Z$:
 \end{theorem}
 
 % ============================================================================
-\section{Razborov--Rudich Natural Proofs and Algebrization Obstructions (\texorpdfstring{$\mathrm{PNP\text{-}09}$}{PNP-09})}
+\section{Scalar Distinguishing Inequalities and Boolean Polynomial Example (\texorpdfstring{$\mathrm{PNP\text{-}09}$}{PNP-09})}
 % ============================================================================
 
-\begin{theorem}[$\mathrm{PNP\text{-}09}$: Razborov--Rudich Distinguisher Inequality and Algebrization Extension Obstruction]\label{thm:pnp09}
+\begin{theorem}[$\mathrm{PNP\text{-}09}$: Scalar Inequalities and a Polynomial Evaluation]\label{thm:pnp09}
 Over $\R$ and $\Z$:
 \begin{enumerate}
-  \item \textbf{(Natural Proofs Distinguisher Bound)}: If a truth-table property $\mathcal{C}$ has density $\mathrm{prob}_{\mathcal{C}} \ge \delta \ge 0$ (\emph{Largeness}) and $\mathrm{prob}_{\mathcal{F}} = 0$ on a function family $\mathcal{F}$ (\emph{Usefulness}), then $|\mathrm{prob}_{\mathcal{C}} - \mathrm{prob}_{\mathcal{F}}| \ge \delta$, so any PRF indistinguishability bound $|\mathrm{prob}_{\mathcal{C}} - \mathrm{prob}_{\mathcal{F}}| \le \varepsilon$ forces $\delta \le \varepsilon$ (\texttt{pnp\_09\_mathlib\_razborov\_rudich\_natural\_proofs\_barrier}, \texttt{pnp\_09\_razborov\_rudich\_natural\_proofs\_barrier}).
-  \item \textbf{(Algebrization Extension Obstruction)}: The polynomial $x^2 - x$ vanishes on $\{0, 1\}$ yet equals $2 \ne 0$ at $x = 2$ (\texttt{pnp\_09\_algebrization\_extension\_obstruction}, \texttt{pnp\_09\_mathlib\_algebrization\_extension\_obstruction}).
+  \item \textbf{(Scalar Inequalities Motivated by Natural Proofs)} Over $\R$, the hypotheses $0 \le \delta \le p_C$, $p_F = 0$, and $|p_C-p_F| \le \varepsilon$ imply $\delta \le \varepsilon$ (\texttt{pnp\_09\_mathlib\_razborov\_rudich\_natural\_proofs\_barrier}). Over $\Z$, the hypotheses $d \le C$, $F=0$, and $C-F \le e$ imply $d \le e$ (\texttt{pnp\_09\_razborov\_rudich\_natural\_proofs\_barrier}).
+  \item \textbf{(Polynomial Example Motivated by Algebrization)} The polynomial $x^2 - x$ vanishes on $\{0, 1\}$ and equals $2$ at $x = 2$ (\texttt{pnp\_09\_algebrization\_extension\_obstruction}, \texttt{pnp\_09\_mathlib\_algebrization\_extension\_obstruction}).
 \end{enumerate}
 \end{theorem}
 
@@ -279,14 +279,14 @@ $\mathrm{PNP\text{-}05}$ & Bilinear Margin \& Karatsuba Identity & \textbf{REFUT
 $\mathrm{PNP\text{-}06}$ & Spectral Discrepancy \& Diagonalization & \textbf{PROVEN\_TRUE} & \texttt{pnp\_06\_baker\_gill\_solovay\_diagonal\_differs} \\
                          & $D_{\mathrm{spec}}(x,y) = (x-y)^2 \ge 0$ & (Pointwise Diag.) & + \texttt{pnp\_06\_no\_machine\_decides\_diagonalLanguage} \\
 $\mathrm{PNP\text{-}07}$ & Emitted `List Clause3` Tseitin Compiler & \textbf{PROVEN\_TRUE} & \texttt{pnp\_07\_emitted\_cnf\_equisat} \\
-                         & $\mathrm{length} = \mathrm{gates}+1 \le 3s+1$ ($3<4$ on `not`) & (`compileTseitinCNF`) & + \texttt{pnp\_07\_mathlib\_tseitin\_equisat\_and\_size} \\
+                         & Exact gate-clause count $+1$ & (Length $\le 3s+1$) & + \texttt{pnp\_07\_emitted\_cnf\_length\_bound} \\
 $\mathrm{PNP\text{-}08}$ & Asymptotic All-$n$ Parity Degree Bound & \textbf{PROVEN\_TRUE} & \texttt{pnp\_08\_all\_n\_real\_no\_subdegree\_polynomial\_computes\_parity} \\
                          & $\Delta_n(P_{<n})=0 \ne 2^n=\Delta_n(\chi_n)\;\forall n\in\N$ & (All-$n$ Fourier) & + \texttt{pnp\_08\_no\_deg2\_polynomial\_computes\_parity3} \\
-$\mathrm{PNP\text{-}09}$ & Natural Proofs \& Algebrization Barriers & \textbf{PROVEN\_TRUE} & \texttt{pnp\_09\_mathlib\_razborov\_rudich\_natural\_proofs\_barrier} \\
-                         & $\delta \le \varepsilon$ PRF Bound \& $2^2-2=2\ne 0$ & (Barrier Lemmas) & + \texttt{pnp\_09\_algebrization\_extension\_obstruction} \\
+$\mathrm{PNP\text{-}09}$ & Scalar inequalities \& polynomial example & \textbf{PROVEN\_TRUE} & \texttt{pnp\_09\_mathlib\_razborov\_rudich\_natural\_proofs\_barrier} \\
+                         & $\delta \le \varepsilon$ and $2^2-2=2$ & (Scalar \& polynomial) & + \texttt{pnp\_09\_algebrization\_extension\_obstruction} \\
 \bottomrule
 \end{tabular}
-\caption{Summary of Dual Symbolic and Lean~4 Kernel Adjudications.}
+\caption{Summary of the stated Lean~4 results. For PNP-07, $s$ is the internal gate count. The emitted list has exact length $\mathrm{tseitinGateClauseCount}(C)+1$ and upper bound $3s+1$.}
 \label{tab:pnp-g3-summary}
 \end{table}
 
